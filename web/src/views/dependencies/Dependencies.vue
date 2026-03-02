@@ -404,7 +404,10 @@ onMounted(async () => {
 
       <!-- 终端对话框 -->
       <Dialog v-model:open="showTerminalDialog" @update:open="(val) => !val && handleTerminalClose()">
-        <DialogContent class="max-w-4xl h-[600px] p-0 overflow-hidden bg-[#1e1e1e] border-none shadow-2xl">
+        <DialogContent
+          class="w-[calc(100%-2rem)] sm:max-w-[90vw] lg:max-w-4xl xl:max-w-5xl h-[60vh] sm:h-[70vh] flex flex-col p-0 overflow-hidden bg-[#1e1e1e] border-none shadow-2xl"
+          :show-close-button="false" @interact-outside="(e) => e.preventDefault()"
+          @escape-key-down="(e) => e.preventDefault()">
           <DialogHeader class="sr-only">
             <DialogTitle>{{ terminalTitle }}</DialogTitle>
             <DialogDescription>正在执行依赖安装指令</DialogDescription>
