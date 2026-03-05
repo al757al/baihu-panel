@@ -139,6 +139,7 @@ func Setup(c *Controllers) *gin.Engine {
 				env.GET("", c.Env.GetEnvVars)
 				env.GET("/all", c.Env.GetAllEnvVars)
 				env.GET("/:id", c.Env.GetEnvVar)
+				env.GET("/:id/tasks", c.Env.GetAssociatedTasks)
 				env.PUT("/:id", c.Env.UpdateEnvVar)
 				env.DELETE("/:id", c.Env.DeleteEnvVar)
 			}

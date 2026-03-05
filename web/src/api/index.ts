@@ -89,9 +89,16 @@ export const api = {
       return request<EnvListResponse>(`/env?${query}`)
     },
     all: () => request<EnvVar[]>('/env/all'),
+    tasks: (id: string) => request<Task[]>(`/env/${id}/tasks`),
     create: (data: Partial<EnvVar>) => request<EnvVar>('/env', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: Partial<EnvVar>) => request<EnvVar>(`/env/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id: string) => request(`/env/${id}`, { method: 'DELETE' })
+    delete: (id: string, force?: boolean) => {
+      const query = force ? '?force=true' : ''
+      return fetch(`${API_BASE_URL}/env/${id}${query}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      }).then(res => res.json() as Promise<ApiResponse<any>>)
+    }
   },
   execute: {
     command: (command: string) => request('/execute/command', { method: 'POST', body: JSON.stringify({ command }) }),

@@ -117,11 +117,32 @@ func (ec *EnvController) DeleteEnvVar(c *gin.Context) {
 		return
 	}
 
-	success := ec.envService.DeleteEnvVar(id)
+	force := c.Query("force") == "true"
+	success, associatedTasks := ec.envService.DeleteEnvVar(id, force)
+
+	if len(associatedTasks) > 0 {
+		c.JSON(200, utils.Response{
+			Code: 409,
+			Msg:  "该环境变量已被任务引用，请先在任务中删除引用或选择强制删除",
+			Data: vo.ToTaskVOListFromModels(associatedTasks),
+		})
+		return
+	}
+
 	if !success {
-		utils.NotFound(c, "环境变量不存在")
+		utils.NotFound(c, "环境变量不存在或删除失败")
 		return
 	}
 
 	utils.SuccessMsg(c, "删除成功")
+}
+
+func (ec *EnvController) GetAssociatedTasks(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		utils.BadRequest(c, "无效的环境变量ID")
+		return
+	}
+	tasks := ec.envService.GetAssociatedTasks(id)
+	utils.Success(c, vo.ToTaskVOListFromModels(tasks))
 }

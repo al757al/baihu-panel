@@ -6,6 +6,8 @@ import (
 	"github.com/engigu/baihu-panel/internal/database"
 	"github.com/engigu/baihu-panel/internal/models"
 	"github.com/engigu/baihu-panel/internal/utils"
+
+	"gorm.io/gorm"
 )
 
 type EnvService struct{}
@@ -72,9 +74,47 @@ func (es *EnvService) UpdateEnvVar(id string, name, value, remark string, hidden
 	return &env
 }
 
-func (es *EnvService) DeleteEnvVar(id string) bool {
+func (es *EnvService) GetAssociatedTasks(id string) []models.Task {
+	var associatedTasks []models.Task
+	query := "envs = ? OR envs LIKE ? OR envs LIKE ? OR envs LIKE ?"
+	database.DB.Where(query, id, id+",%", "%,"+id, "%,"+id+",%").Find(&associatedTasks)
+	return associatedTasks
+}
+
+func (es *EnvService) DeleteEnvVar(id string, force bool) (bool, []models.Task) {
+	associatedTasks := es.GetAssociatedTasks(id)
+
+	if len(associatedTasks) > 0 && !force {
+		return false, associatedTasks
+	}
+
+	if force {
+		err := database.DB.Transaction(func(tx *gorm.DB) error {
+			// Update tasks to remove this env ID
+			for _, task := range associatedTasks {
+				ids := splitEnvIDs(task.Envs)
+				var newIDs []string
+				for _, eid := range ids {
+					if eid != id {
+						newIDs = append(newIDs, eid)
+					}
+				}
+				newEnvs := strings.Join(newIDs, ",")
+				if err := tx.Model(&task).Update("envs", newEnvs).Error; err != nil {
+					return err
+				}
+			}
+			// Delete the env var
+			if err := tx.Where("id = ?", id).Delete(&models.EnvironmentVariable{}).Error; err != nil {
+				return err
+			}
+			return nil
+		})
+		return err == nil, nil
+	}
+
 	result := database.DB.Where("id = ?", id).Delete(&models.EnvironmentVariable{})
-	return result.RowsAffected > 0
+	return result.RowsAffected > 0, nil
 }
 
 // GetEnvVarsByIDs 根据逗号分隔的ID字符串获取环境变量列表，返回 NAME=VALUE 格式
