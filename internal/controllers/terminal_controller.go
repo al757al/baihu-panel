@@ -262,6 +262,12 @@ func (tc *TerminalController) handlePipeMode(conn *websocket.Conn, userID string
 
 // ExecuteShellCommand 执行单个命令并返回结果
 func (tc *TerminalController) ExecuteShellCommand(c *gin.Context) {
+	// 演示模式下禁止执行命令
+	if constant.DemoMode {
+		utils.BadRequest(c, "演示模式下不能执行命令")
+		return
+	}
+
 	var req struct {
 		Command string `json:"command" binding:"required"`
 	}
