@@ -200,13 +200,13 @@ function onDialogClose(open: boolean) {
           @click="showDetail(log)">
           <span class="w-12 sm:w-16 shrink-0 text-muted-foreground text-xs sm:text-sm">#{{ getLogIndex(index) }}</span>
           <span class="w-40 sm:w-56 shrink-0 font-medium text-xs sm:text-sm truncate" :title="log.title">{{ log.title }}</span>
-          <span class="hidden sm:flex sm:flex-1 font-medium text-xs sm:text-sm text-muted-foreground truncate" :title="log.content">
+          <span class="hidden sm:flex sm:flex-1 text-xs sm:text-sm text-muted-foreground truncate" :title="log.content">
             {{ log.content || '-' }}
           </span>
           <span class="w-10 sm:w-16 shrink-0 flex justify-center">
-            <span :class="['h-2 w-2 rounded-full', log.status === LOG_STATUS.SUCCESS ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]']"></span>
+            <span :class="['h-2 w-2 rounded-full', log.status === LOG_STATUS.SUCCESS ? 'bg-green-500' : 'bg-red-500']"></span>
           </span>
-          <span class="shrink-0 w-24 sm:w-40 sm:text-right text-[10px] sm:text-xs text-muted-foreground font-mono">
+          <span class="shrink-0 w-24 sm:w-40 sm:text-right text-xs text-muted-foreground">
             {{ formatDate(log.created_at) }}
           </span>
         </div>

@@ -32,6 +32,21 @@ func (s *SettingsService) InitSettings() error {
 			}
 		}
 	}
+	
+	// 初始化日志清理配置
+	var logRetentionCount int64
+	database.DB.Model(&models.Setting{}).Where("section = ? AND `key` = ?", constant.SectionSystem, constant.KeyLogRetention).Count(&logRetentionCount)
+	if logRetentionCount == 0 {
+		if err := database.DB.Create(&models.Setting{
+			ID:      utils.GenerateID(),
+			Section: constant.SectionSystem,
+			Key:     constant.KeyLogRetention,
+			Value:   models.BigText(constant.DefaultLogRetention),
+		}).Error; err != nil {
+			return err
+		}
+	}
+	
 	// 初始化或获取 JWT Secret 密码
 	var secCount int64
 	database.DB.Model(&models.Setting{}).Where("section = ? AND `key` = ?", constant.SectionSecurity, constant.KeySecret).Count(&secCount)

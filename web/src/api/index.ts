@@ -450,6 +450,10 @@ export interface SiteSettings {
   openapi_enabled?: boolean
   openapi_token?: string
   openapi_token_expire?: string
+  system_notice_days?: string
+  system_notice_max_count?: string
+  push_log_days?: string
+  push_log_max_count?: string
 }
 
 export interface SchedulerSettings {

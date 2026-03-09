@@ -32,7 +32,11 @@ const form = ref<SiteSettings>({
   cookie_days: '7',
   openapi_enabled: false,
   openapi_token: '',
-  openapi_token_expire: ''
+  openapi_token_expire: '',
+  system_notice_days: '30',
+  system_notice_max_count: '500',
+  push_log_days: '15',
+  push_log_max_count: '5000'
 })
 const loading = ref(false)
 const showOpenapiConfirmDialog = ref(false)
@@ -62,7 +66,11 @@ async function saveSettings() {
     await api.settings.updateSite({
       ...form.value,
       page_size: String(form.value.page_size),
-      cookie_days: String(form.value.cookie_days)
+      cookie_days: String(form.value.cookie_days),
+      system_notice_days: String(form.value.system_notice_days || '30'),
+      system_notice_max_count: String(form.value.system_notice_max_count || '500'),
+      push_log_days: String(form.value.push_log_days || '15'),
+      push_log_max_count: String(form.value.push_log_max_count || '5000')
     })
     await refreshSettings()
     toast.success('保存成功')
@@ -133,6 +141,43 @@ onMounted(loadSettings)
         <div class="flex items-center gap-2">
           <Input v-model="form.cookie_days" type="number" class="w-20" />
           <span class="text-sm text-muted-foreground">天过期</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pt-6 border-t mt-6">
+      <h3 class="text-lg font-medium text-foreground mb-4">日志清理策略</h3>
+      <p class="text-sm text-muted-foreground mb-4">自动清理超过指定天数或数量的日志记录，保持系统性能。</p>
+      
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+          <Label class="sm:text-right text-muted-foreground">系统通知</Label>
+          <div class="sm:col-span-3 flex flex-wrap items-center gap-4">
+            <div class="flex items-center gap-2">
+              <Input v-model="form.system_notice_days" type="number" class="w-20" min="0" />
+              <span class="text-sm text-muted-foreground">天后清理</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-muted-foreground">或保留最新</span>
+              <Input v-model="form.system_notice_max_count" type="number" class="w-24" min="0" />
+              <span class="text-sm text-muted-foreground">条</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+          <Label class="sm:text-right text-muted-foreground">推送日志</Label>
+          <div class="sm:col-span-3 flex flex-wrap items-center gap-4">
+            <div class="flex items-center gap-2">
+              <Input v-model="form.push_log_days" type="number" class="w-20" min="0" />
+              <span class="text-sm text-muted-foreground">天后清理</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-muted-foreground">或保留最新</span>
+              <Input v-model="form.push_log_max_count" type="number" class="w-24" min="0" />
+              <span class="text-sm text-muted-foreground">条</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

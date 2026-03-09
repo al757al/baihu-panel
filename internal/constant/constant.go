@@ -48,7 +48,8 @@ const (
 	KeySecret = "secret"
 
 	// System Settings Key 常量
-	KeyInitialized = "initialized"
+	KeyInitialized  = "initialized"
+	KeyLogRetention = "log_retention"
 
 	// Scheduler Settings Key 常量
 	KeyWorkerCount  = "worker_count"
@@ -158,3 +159,6 @@ var DefaultSettings = map[string]map[string]string{
 		KeyRateInterval: "200",
 	},
 }
+
+// DefaultLogRetention 默认日志清理配置
+var DefaultLogRetention = `{"system_notice":{"days":30,"max_count":500},"push_log":{"days":15,"max_count":5000}}`

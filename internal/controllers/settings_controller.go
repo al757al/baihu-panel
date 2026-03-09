@@ -106,6 +106,25 @@ func (sc *SettingsController) GetSiteSettings(c *gin.Context) {
 		}
 	}
 
+	// 获取日志清理配置
+	logRetentionJson := sc.settingsService.Get(constant.SectionSystem, constant.KeyLogRetention)
+	if logRetentionJson != "" {
+		var configs map[string]struct {
+			Days     int `json:"days"`
+			MaxCount int `json:"max_count"`
+		}
+		if err := json.Unmarshal([]byte(logRetentionJson), &configs); err == nil {
+			if cfg, ok := configs[constant.LogCategorySystemNotice]; ok {
+				settings["system_notice_days"] = fmt.Sprintf("%d", cfg.Days)
+				settings["system_notice_max_count"] = fmt.Sprintf("%d", cfg.MaxCount)
+			}
+			if cfg, ok := configs[constant.LogCategoryPushLog]; ok {
+				settings["push_log_days"] = fmt.Sprintf("%d", cfg.Days)
+				settings["push_log_max_count"] = fmt.Sprintf("%d", cfg.MaxCount)
+			}
+		}
+	}
+
 	utils.Success(c, settings)
 }
 
@@ -124,14 +143,18 @@ func (sc *SettingsController) GetPublicSiteSettings(c *gin.Context) {
 // UpdateSiteSettings 更新站点设置
 func (sc *SettingsController) UpdateSiteSettings(c *gin.Context) {
 	var req struct {
-		Title              string `json:"title"`
-		Subtitle           string `json:"subtitle"`
-		Icon               string `json:"icon"`
-		PageSize           string `json:"page_size"`
-		CookieDays         string `json:"cookie_days"`
-		OpenapiEnabled     bool   `json:"openapi_enabled"`
-		OpenapiToken       string `json:"openapi_token"`
-		OpenapiTokenExpire string `json:"openapi_token_expire"`
+		Title                     string `json:"title"`
+		Subtitle                  string `json:"subtitle"`
+		Icon                      string `json:"icon"`
+		PageSize                  string `json:"page_size"`
+		CookieDays                string `json:"cookie_days"`
+		OpenapiEnabled            bool   `json:"openapi_enabled"`
+		OpenapiToken              string `json:"openapi_token"`
+		OpenapiTokenExpire        string `json:"openapi_token_expire"`
+		SystemNoticeDays          int    `json:"system_notice_days"`
+		SystemNoticeMaxCount      int    `json:"system_notice_max_count"`
+		PushLogDays               int    `json:"push_log_days"`
+		PushLogMaxCount           int    `json:"push_log_max_count"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -163,6 +186,21 @@ func (sc *SettingsController) UpdateSiteSettings(c *gin.Context) {
 	if err := sc.settingsService.SetSection(constant.SectionSite, values); err != nil {
 		utils.ServerError(c, "保存失败")
 		return
+	}
+
+	// 保存日志清理配置
+	logRetentionConfig := map[string]interface{}{
+		constant.LogCategorySystemNotice: map[string]int{
+			"days":      req.SystemNoticeDays,
+			"max_count": req.SystemNoticeMaxCount,
+		},
+		constant.LogCategoryPushLog: map[string]int{
+			"days":      req.PushLogDays,
+			"max_count": req.PushLogMaxCount,
+		},
+	}
+	if logRetentionJson, err := json.Marshal(logRetentionConfig); err == nil {
+		sc.settingsService.Set(constant.SectionSystem, constant.KeyLogRetention, string(logRetentionJson))
 	}
 
 	utils.SuccessMsg(c, "保存成功")
