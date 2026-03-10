@@ -72,6 +72,9 @@ func initOpenAPIRoutes(root *gin.RouterGroup, urlPrefix string) {
   </body>
 </html>`
 			c.Header("Content-Type", "text/html; charset=utf-8")
+			c.Header("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate")
+			c.Header("Pragma", "no-cache")
+			c.Header("Expires", "0")
 			c.Status(http.StatusOK)
 			c.Writer.Write([]byte(scalarHTML))
 			c.Abort()

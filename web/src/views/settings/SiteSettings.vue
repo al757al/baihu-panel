@@ -253,7 +253,7 @@ onMounted(loadSettings)
       </div>
       <p class="text-sm text-muted-foreground mb-4">开启全局 OpenAPI 直接访问能力，配置后可通过请求头 <code
           class="bg-muted px-1.5 py-0.5 rounded text-xs select-all font-sans">Authorization: Bearer &lt;在此生成的Token&gt;</code>
-        无需登录直接调用系统的所有接口，请妥善保管并设置合理的有效期。</p>
+        无需登录直接调用系统的所有接口，请妥善保管并设置合理的有效期。<span class="text-amber-600 dark:text-amber-500 font-medium ml-1">注意：必须先开启鉴权开关才能查看接口文档页面和进行调用。</span></p>
 
       <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4 mb-4">
         <Label class="sm:text-right text-muted-foreground">Token 密钥</Label>
