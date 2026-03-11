@@ -3,7 +3,6 @@ package router
 import (
 	"compress/gzip"
 	"io"
-	"io/fs"
 	"mime"
 	"net/http"
 	"path/filepath"
