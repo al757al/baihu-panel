@@ -137,16 +137,16 @@ onMounted(loadSettings)
           v-html="iconPreview" />
       </div>
     </div>
-    <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-      <Label class="sm:text-right">分页/Cookie</Label>
-      <div class="sm:col-span-3 flex flex-wrap items-center gap-4">
-        <div class="flex items-center gap-2">
-          <Input v-model="form.page_size" type="number" class="w-20" />
-          <span class="text-sm text-muted-foreground">条/页</span>
+    <div class="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+      <Label class="sm:text-right text-muted-foreground whitespace-nowrap sm:pt-0 pt-1">分页/Cookie</Label>
+      <div class="sm:col-span-3 grid grid-cols-2 gap-0">
+        <div class="flex items-center gap-1.5 pr-4">
+          <Input v-model="form.page_size" type="number" class="w-full h-8 text-xs sm:h-9 sm:text-sm" />
+          <span class="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">条/页</span>
         </div>
-        <div class="flex items-center gap-2">
-          <Input v-model="form.cookie_days" type="number" class="w-20" />
-          <span class="text-sm text-muted-foreground">天过期</span>
+        <div class="flex items-center gap-1.5 border-l pl-4 border-border/50">
+          <Input v-model="form.cookie_days" type="number" class="w-full h-8 text-xs sm:h-9 sm:text-sm" />
+          <span class="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">天过期</span>
         </div>
       </div>
     </div>
@@ -155,52 +155,52 @@ onMounted(loadSettings)
       <h3 class="text-lg font-medium text-foreground mb-4">日志清理策略</h3>
       <p class="text-sm text-muted-foreground mb-4">自动清理超过指定天数或数量的日志记录，保持系统性能。</p>
 
-      <div class="space-y-4 sm:space-y-4">
-        <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-          <Label class="sm:text-right text-muted-foreground whitespace-nowrap">系统通知</Label>
-          <div class="sm:col-span-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-            <div class="flex items-center gap-1.5">
-              <Input v-model="form.system_notice_days" type="number" class="w-16 h-8 text-xs sm:w-20 sm:h-9 sm:text-sm"
+      <div class="space-y-5 sm:space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+          <Label class="sm:text-right text-muted-foreground whitespace-nowrap sm:pt-0 pt-1">系统通知</Label>
+          <div class="sm:col-span-3 grid grid-cols-2 gap-0">
+            <div class="flex items-center gap-1.5 pr-4">
+              <Input v-model="form.system_notice_days" type="number" class="w-full h-8 text-xs sm:h-9 sm:text-sm"
                 min="0" />
               <span class="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">天清理</span>
             </div>
-            <div class="flex items-center gap-1.5 border-l pl-3 border-border/50">
+            <div class="flex items-center gap-1.5 border-l pl-4 border-border/50">
               <span class="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">保留</span>
               <Input v-model="form.system_notice_max_count" type="number"
-                class="w-20 h-8 text-xs sm:w-24 sm:h-9 sm:text-sm" min="0" />
+                class="w-full h-8 text-xs sm:h-9 sm:text-sm" min="0" />
               <span class="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">条</span>
             </div>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-          <Label class="sm:text-right text-muted-foreground whitespace-nowrap">推送日志</Label>
-          <div class="sm:col-span-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-            <div class="flex items-center gap-1.5">
-              <Input v-model="form.push_log_days" type="number" class="w-16 h-8 text-xs sm:w-20 sm:h-9 sm:text-sm"
+        <div class="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+          <Label class="sm:text-right text-muted-foreground whitespace-nowrap sm:pt-0 pt-1">推送日志</Label>
+          <div class="sm:col-span-3 grid grid-cols-2 gap-0">
+            <div class="flex items-center gap-1.5 pr-4">
+              <Input v-model="form.push_log_days" type="number" class="w-full h-8 text-xs sm:h-9 sm:text-sm"
                 min="0" />
               <span class="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">天清理</span>
             </div>
-            <div class="flex items-center gap-1.5 border-l pl-3 border-border/50">
+            <div class="flex items-center gap-1.5 border-l pl-4 border-border/50">
               <span class="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">保留</span>
-              <Input v-model="form.push_log_max_count" type="number" class="w-20 h-8 text-xs sm:w-24 sm:h-9 sm:text-sm"
+              <Input v-model="form.push_log_max_count" type="number" class="w-full h-8 text-xs sm:h-9 sm:text-sm"
                 min="0" />
               <span class="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">条</span>
             </div>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-          <Label class="sm:text-right text-muted-foreground whitespace-nowrap">登录日志</Label>
-          <div class="sm:col-span-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-            <div class="flex items-center gap-1.5">
-              <Input v-model="form.login_log_days" type="number" class="w-16 h-8 text-xs sm:w-20 sm:h-9 sm:text-sm"
+        <div class="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+          <Label class="sm:text-right text-muted-foreground whitespace-nowrap sm:pt-0 pt-1">登录日志</Label>
+          <div class="sm:col-span-3 grid grid-cols-2 gap-0">
+            <div class="flex items-center gap-1.5 pr-4">
+              <Input v-model="form.login_log_days" type="number" class="w-full h-8 text-xs sm:h-9 sm:text-sm"
                 min="0" />
               <span class="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">天清理</span>
             </div>
-            <div class="flex items-center gap-1.5 border-l pl-3 border-border/50">
+            <div class="flex items-center gap-1.5 border-l pl-4 border-border/50">
               <span class="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">保留</span>
-              <Input v-model="form.login_log_max_count" type="number" class="w-20 h-8 text-xs sm:w-24 sm:h-9 sm:text-sm"
+              <Input v-model="form.login_log_max_count" type="number" class="w-full h-full h-8 text-xs sm:h-9 sm:text-sm"
                 min="0" />
               <span class="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">条</span>
             </div>
