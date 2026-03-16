@@ -27,10 +27,14 @@ mkdir -p \
 # ============================
 # Mise 环境初始化
 # ============================
-log "Syncing mise environment from base..."
 mkdir -p "$MISE_DIR"
-rsync -a --ignore-existing /opt/mise-base/ "$MISE_DIR/" || true
-log "Mise environment synced"
+if [ -d "/opt/mise-base" ]; then
+  log "Syncing mise environment from base..."
+  rsync -a --ignore-existing /opt/mise-base/ "$MISE_DIR/" || true
+  log "Mise environment synced"
+else
+  log "No base mise environment found, skipping sync"
+fi
 
 # ============================
 # 环境变量注入

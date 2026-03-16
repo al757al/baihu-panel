@@ -14,5 +14,6 @@ RUN sed -i 's@deb.debian.org@mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.li
     && apt-get install -y --no-install-recommends \
          tzdata git curl wget vim htop ca-certificates rsync \
     && curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh \
+    && mkdir -p /opt/mise-base \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /root/.cache/mise /opt/mise-base/cache/*

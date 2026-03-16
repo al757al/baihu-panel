@@ -28,11 +28,15 @@ mkdir -p \
 # Mise 环境初始化
 # ============================
 # 始终尝试同步基础环境（以补充用户挂载卷中可能缺失的文件，如 config.toml）
-log "Syncing mise environment from base..."
 mkdir -p "$MISE_DIR"
-# 使用 rsync 同步: -a 归档模式, --ignore-existing 不覆盖已存在文件
-rsync -a --ignore-existing /opt/mise-base/ "$MISE_DIR/" || true
-log "Mise environment synced"
+if [ -d "/opt/mise-base" ]; then
+  log "Syncing mise environment from base..."
+  # 使用 rsync 同步: -a 归档模式, --ignore-existing 不覆盖已存在文件
+  rsync -a --ignore-existing /opt/mise-base/ "$MISE_DIR/" || true
+  log "Mise environment synced"
+else
+  log "No base mise environment found, skipping sync"
+fi
 
 # ============================
 # 环境变量注入
