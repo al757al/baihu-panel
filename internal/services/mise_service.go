@@ -28,7 +28,7 @@ type MiseLanguage struct {
 	Plugin      string     `json:"plugin"`
 	Version     string     `json:"version"`
 	Source      MiseSource `json:"source"`
-	Active      bool       `json:"active"`
+	IsGlobal    bool       `json:"is_global"`
 	InstallPath string     `json:"install_path,omitempty"`
 	InstalledAt string     `json:"installed_at,omitempty"` // 安装日期
 }
@@ -38,42 +38,17 @@ type MiseSource struct {
 	Path string `json:"path"`
 }
 
-// List 从数据库获取已保存的语言列表
+// List 实时从系统检测 mise 环境并同步到数据库
 func (s *MiseService) List() ([]MiseLanguage, error) {
-	db := database.GetDB()
-	var models []models.Language
-	if err := db.Order("installed_at DESC, plugin ASC").Find(&models).Error; err != nil {
+	langs, err := s.fetchLiveLanguages()
+	if err != nil {
 		return nil, err
 	}
 
-	// 如果数据库为空，尝试进行一次自动同步（延迟加载）
-	if len(models) == 0 {
-		logger.Info("[Mise] 数据库中没有语言记录，正在进行首次同步...")
-		if err := s.Sync(); err == nil {
-			// 同步成功后重新查询
-			if err := db.Order("installed_at DESC, plugin ASC").Find(&models).Error; err != nil {
-				return nil, err
-			}
-		} else {
-			logger.Warnf("[Mise] 首次自动同步失败: %v", err)
-		}
-	}
+	// 异步同步到数据库，确保列表响应速度
+	go s.syncToDB(langs)
 
-	result := make([]MiseLanguage, 0, len(models))
-	for _, m := range models {
-		lang := MiseLanguage{
-			Plugin:      m.Plugin,
-			Version:     m.Version,
-			InstallPath: m.InstallPath,
-			Active:      true,
-		}
-		lang.Source.Path = m.Source
-		if m.InstalledAt != nil {
-			lang.InstalledAt = time.Time(*m.InstalledAt).Format("2006-01-02 15:04:05")
-		}
-		result = append(result, lang)
-	}
-	return result, nil
+	return langs, nil
 }
 
 // Sync 实时检测本地 mise 环境并同步到数据库
@@ -166,7 +141,6 @@ func (s *MiseService) listFallback() ([]MiseLanguage, error) {
 		lang := MiseLanguage{
 			Plugin:  parts[0],
 			Version: parts[1],
-			Active:  true,
 		}
 		if len(parts) >= 3 {
 			lang.Source = MiseSource{Path: parts[2]}
@@ -220,6 +194,13 @@ func (s *MiseService) Versions(plugin string) ([]string, error) {
 // enrichInstallDates 为语言列表添加安装日期信息
 func (s *MiseService) enrichInstallDates(languages []MiseLanguage) {
 	for i := range languages {
+		// 判断是否是 global
+		if languages[i].Source.Type == "global" {
+			languages[i].IsGlobal = true
+		} else if strings.Contains(languages[i].Source.Path, ".config/mise/config.toml") {
+			languages[i].IsGlobal = true
+		}
+
 		if languages[i].InstallPath != "" {
 			if installDate := s.getInstallDate(languages[i].InstallPath); installDate != "" {
 				languages[i].InstalledAt = installDate
@@ -348,4 +329,14 @@ func (s *MiseService) GetVerifyCommand(plugin, version string) (string, error) {
 		return utils.BuildMiseCommandSimple(plugin+" --version", plugin, version), nil
 	}
 	return m.GetVerifyCommand(version)
+}
+// UseGlobal 设置全局默认版本
+func (s *MiseService) UseGlobal(plugin, version string) error {
+	cmd := exec.Command("mise", "use", "-g", fmt.Sprintf("%s@%s", plugin, version))
+	cmd.Env = os.Environ()
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("mise use -g failed: %v, output: %s", err, string(output))
+	}
+	return nil
 }

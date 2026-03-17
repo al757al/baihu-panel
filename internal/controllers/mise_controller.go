@@ -76,3 +76,23 @@ func (c *MiseController) VerifyCommand(ctx *gin.Context) {
 	}
 	utils.Success(ctx, gin.H{"command": cmd})
 }
+// UseGlobal 设置全局默认版本
+func (c *MiseController) UseGlobal(ctx *gin.Context) {
+	var req struct {
+		Plugin  string `json:"plugin"`
+		Version string `json:"version"`
+	}
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		utils.BadRequest(ctx, "参数错误: "+err.Error())
+		return
+	}
+	if req.Plugin == "" || req.Version == "" {
+		utils.BadRequest(ctx, "参数 plugin 和 version 不能为空")
+		return
+	}
+	if err := c.service.UseGlobal(req.Plugin, req.Version); err != nil {
+		utils.ServerError(ctx, "设置全局版本失败: "+err.Error())
+		return
+	}
+	utils.Success(ctx, nil)
+}

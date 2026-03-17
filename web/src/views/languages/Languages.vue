@@ -25,6 +25,7 @@ const SUPPORTED_DEPS_LANGS = [
 
 interface DisplayLanguage extends Omit<MiseLanguage, 'source'> {
     source: string
+    isGlobal: boolean
 }
 
 const languages = ref<DisplayLanguage[]>([])
@@ -83,7 +84,8 @@ async function loadLanguages() {
         }
         languages.value = data.map(item => ({
             ...item,
-            source: typeof item.source === 'object' ? (item.source.path || item.source.type || '-') : (item.source || '-')
+            source: typeof item.source === 'object' ? (item.source.path || item.source.type || '-') : (item.source || '-'),
+            isGlobal: !!item.is_global
         }))
     } catch (e) {
         toast.error('获取语言列表失败')
@@ -243,15 +245,31 @@ async function handleVerify(lang: MiseLanguage) {
     }
 }
 
+async function handleSetDefault(lang: MiseLanguage) {
+    try {
+        await api.mise.useGlobal(lang.plugin, lang.version)
+        toast.success(`已将 ${lang.plugin} ${lang.version} 设为全局默认版本`)
+        await loadLanguages()
+    } catch (e) {
+        toast.error('设置默认版本失败: ' + e)
+    }
+}
+
 onMounted(loadLanguages)
 </script>
 
 <template>
     <div class="space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
+            <div class="flex-1">
                 <h2 class="text-xl sm:text-2xl font-bold tracking-tight">语言依赖</h2>
-                <p class="text-muted-foreground text-sm">管理系统环境中的编程语言运行时及相关包依赖 (Mise)</p>
+                <div class="mt-1 space-y-1">
+                    <p class="text-muted-foreground text-sm">管理系统环境中的编程语言运行时及相关包依赖 (Mise)</p>
+                    <div class="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-500 bg-amber-500/5 w-fit px-2 py-0.5 rounded-full border border-amber-500/20">
+                        <AlertCircle class="h-3 w-3" />
+                        <span><b>设为默认</b>：将选定版本设为系统全局默认 (mise use -g)，生效后所有未通过高级配置指定特定环境的任务将默认调用此环境。</span>
+                    </div>
+                </div>
             </div>
             <Button @click="openInstallDialog">
                 <Plus class="h-4 w-4 mr-2" /> 新增语言
@@ -316,6 +334,10 @@ onMounted(loadLanguages)
                                     <span class="font-bold capitalize truncate">{{ lang.plugin }}</span>
                                     <Badge variant="outline" class="font-mono whitespace-nowrap">{{ lang.version }}
                                     </Badge>
+                                    <Badge v-if="lang.isGlobal" variant="secondary"
+                                        class="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[10px] h-5 px-1.5 font-normal">
+                                        默认
+                                    </Badge>
                                 </div>
                                 <div class="text-xs text-muted-foreground mt-1 space-y-0.5">
                                     <div class="font-mono opacity-60 truncate" :title="lang.source">来源: {{ lang.source
@@ -341,6 +363,10 @@ onMounted(loadLanguages)
                             <Button variant="outline" size="sm" class="whitespace-nowrap flex-1 sm:flex-none"
                                 @click="handleVerify(lang)">
                                 环境验证
+                            </Button>
+                            <Button variant="outline" size="sm" class="whitespace-nowrap flex-1 sm:flex-none"
+                                :disabled="lang.isGlobal" @click="handleSetDefault(lang)">
+                                设为默认
                             </Button>
                             <Button variant="ghost" size="icon"
                                 class="text-destructive h-8 w-8 shrink-0 ml-auto sm:ml-0" @click="confirmDelete(lang)"

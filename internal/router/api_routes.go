@@ -210,6 +210,7 @@ func registerMiseRoutes(g *gin.RouterGroup, c *Controllers) {
 		mise.GET("/plugins", c.Mise.Plugins)
 		mise.GET("/versions", c.Mise.Versions)
 		mise.GET("/verify-cmd", c.Mise.VerifyCommand)
+		mise.POST("/use-global", c.Mise.UseGlobal)
 	}
 }
 
