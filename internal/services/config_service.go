@@ -67,6 +67,15 @@ func getEnvInt(key string, target *int) {
 }
 
 func LoadConfig(path string) (*AppConfig, error) {
+	// 路径发现逻辑：参数优先 -> 环境变量优先 -> 默认常量
+	if path == "" {
+		if envPath := os.Getenv("BH_CONFIG_PATH"); envPath != "" {
+			path = envPath
+		} else {
+			path = constant.ConfigPath
+		}
+	}
+
 	// 初始化默认配置
 	Config = &AppConfig{
 		Server: ServerConfig{

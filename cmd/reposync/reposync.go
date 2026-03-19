@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/engigu/baihu-panel/internal/services/tasks"
 	"github.com/engigu/baihu-panel/internal/utils"
 )
 
@@ -31,6 +32,9 @@ type Config struct {
 	Blacklist      string // Script filter blacklist keywords, vertical line separated
 	Dependence     string // Script dependence file keywords, vertical line separated
 	Extensions     string // Script file extensions, vertical line separated
+	TaskID         string
+	TaskLanguages  string
+	TaskTimeout    int
 }
 
 func Run(args []string) {
@@ -50,26 +54,38 @@ func Run(args []string) {
 	fs.StringVar(&cfg.Blacklist, "blacklist", "", "Script filter blacklist keywords (| separated)")
 	fs.StringVar(&cfg.Dependence, "dependence", "", "Script dependence keywords (| separated)")
 	fs.StringVar(&cfg.Extensions, "extensions", "", "Script extensions (| separated)")
+	fs.StringVar(&cfg.TaskID, "task-id", "", "Task ID for metadata")
+	fs.StringVar(&cfg.TaskLanguages, "task-langs", "", "Configured languages (JSON)")
+	fs.StringVar(&cfg.TaskID, "repo-task-id", "", "Original Task ID")
+	fs.IntVar(&cfg.TaskTimeout, "task-timeout", 30, "Task timeout (minutes)")
 
 	fs.Parse(args)
 
-	if cfg.SourceURL == "" || cfg.TargetPath == "" {
-		fmt.Println("错误: 缺少 --source-url 或 --target-path 参数")
-		os.Exit(1)
-	}
-
-	fmt.Printf("参数: %s\n", strings.Join(args, " "))
+	fmt.Println("========================================")
+	fmt.Println("  仓库同步任务开始  ")
+	fmt.Println("========================================")
+	fmt.Printf("[1/3] 解析同步参数: %s\n", strings.Join(args, " "))
 
 	if cfg.SourceType == "git" {
+		fmt.Printf("[2/3] 正在通过 Git 同步内容...\n")
 		syncGit(cfg)
 	} else {
+		fmt.Printf("[2/3] 正在通过 URL 下载内容...\n")
 		syncURL(cfg)
 	}
 
 	// 执行脚本过滤（仅限 git 模式，url 加载通常为单文件，暂不处理过滤）
 	if cfg.SourceType == "git" {
+		fmt.Printf("[3/3] 正在执行脚本过滤与文件清理...\n")
 		filterFiles(cfg)
+
+		if cfg.TaskID != "" {
+			tasks.ParseRepoScriptsAndAddCron(nil, cfg.TaskID, os.Stdout)
+		}
 	}
+	fmt.Println("\n========================================")
+	fmt.Println("  仓库同步任务完成  ")
+	fmt.Println("========================================")
 }
 
 func syncGit(cfg Config) {
@@ -692,5 +708,6 @@ func cleanEmptyDirs(root string) {
 			}
 		}
 	}
+
 }
 

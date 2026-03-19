@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"path/filepath"
+	"strings"
 
 	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/models"
@@ -39,6 +40,9 @@ func resolveWorkDir(workDir string) string {
 		return absPath
 	}
 	// 如果已经是绝对路径，直接返回
+	if strings.HasPrefix(workDir, "$SCRIPTS_DIR$") {
+		return workDir
+	}
 	if filepath.IsAbs(workDir) {
 		return workDir
 	}

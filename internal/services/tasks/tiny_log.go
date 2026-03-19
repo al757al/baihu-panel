@@ -139,6 +139,11 @@ func (l *TinyLog) Write(p []byte) (n int, err error) {
 	return originalInputLen, nil
 }
 
+// WriteString 方便地写入字符串
+func (l *TinyLog) WriteString(s string) (n int, err error) {
+	return l.Write([]byte(s))
+}
+
 // Subscribe 返回一个实时接收日志块的通道
 func (l *TinyLog) Subscribe() chan []byte {
 	l.mu.Lock()

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -23,8 +24,25 @@ var (
 )
 
 // ParseRepoScriptsAndAddCron scans the repo dir for scripts, parses cron and env comments, and registers tasks
-func ParseRepoScriptsAndAddCron(es *ExecutorService, repoTask *models.Task) {
-	if repoTask == nil || repoTask.Type != constant.TaskTypeRepo {
+func ParseRepoScriptsAndAddCron(es *ExecutorService, taskID string, logWriter io.Writer) {
+	// help print logs to writer if provided
+	log := func(format string, a ...interface{}) {
+		msg := fmt.Sprintf(format, a...)
+		if !strings.HasSuffix(msg, "\n") {
+			msg += "\n"
+		}
+		if logWriter != nil {
+			logWriter.Write([]byte(msg))
+		}
+		// logger.Info(msg)
+	}
+
+	var repoTask models.Task
+	if err := database.DB.Where("id = ?", taskID).First(&repoTask).Error; err != nil {
+		return
+	}
+
+	if repoTask.Type != constant.TaskTypeRepo {
 		return
 	}
 
@@ -41,10 +59,13 @@ func ParseRepoScriptsAndAddCron(es *ExecutorService, repoTask *models.Task) {
 	targetPath := repoCfg.TargetPath
 	if targetPath == "" {
 		targetPath = repoTask.WorkDir
+	} else if !filepath.IsAbs(targetPath) {
+		targetPath = filepath.Join(resolveAbsScriptsDir(), targetPath)
 	}
 	if targetPath == "" {
 		return
 	}
+	targetPath = filepath.Clean(targetPath)
 
 	// We might have appended a repo id to targetPath
 	repoId := utils.GetRepoIdentifier(repoCfg.SourceURL, repoCfg.Branch)
@@ -81,7 +102,13 @@ func ParseRepoScriptsAndAddCron(es *ExecutorService, repoTask *models.Task) {
 		}
 	}
 
+	log("\n----------------------------------------")
+	log("  开始扫描脚本并自动注册定时任务  ")
+	log("----------------------------------------")
+
 	foundSourceIDs := make(map[string]bool)
+	newTaskCount := 0
+	updateTaskCount := 0
 
 	filepath.WalkDir(targetPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
@@ -234,7 +261,8 @@ func ParseRepoScriptsAndAddCron(es *ExecutorService, repoTask *models.Task) {
 
 		if taskName != "" && taskCron != "" {
 			// 获取脚本相对于数据目录的路径
-			absScriptsDir, _ := filepath.Abs(constant.ScriptsWorkDir)
+			absScriptsDir := resolveAbsScriptsDir()
+			absTargetPath, _ := filepath.Abs(targetPath)
 			absPath, _ := filepath.Abs(path)
 			
 			// 计算 SourceID: 相对于脚本目录的完整路径，并清洗特殊符号
@@ -245,9 +273,11 @@ func ParseRepoScriptsAndAddCron(es *ExecutorService, repoTask *models.Task) {
 			displayPath := path
 			displayWorkDir := targetPath
 			if strings.HasPrefix(absPath, absScriptsDir) {
-				displayPath = filepath.Join("$SCRIPTS_DIR$", relPath)
+				if relCommandPath, err := filepath.Rel(absTargetPath, absPath); err == nil && relCommandPath != "" {
+					displayPath = filepath.Clean(relCommandPath)
+				}
                 // 获取目录路径
-                relDir, _ := filepath.Rel(absScriptsDir, targetPath)
+                relDir, _ := filepath.Rel(absScriptsDir, absTargetPath)
                 displayWorkDir = filepath.Join("$SCRIPTS_DIR$", relDir)
 			}
 
@@ -259,15 +289,12 @@ func ParseRepoScriptsAndAddCron(es *ExecutorService, repoTask *models.Task) {
 
 			// See if task exists (优先通过 SourceID 匹配)
 			var existing models.Task
-			err := database.DB.Where("source_id = ?", sourceID).First(&existing).Error
-			if err != nil {
-				// 降级使用 command + tag 匹配 (兼容旧数据)
-				err = database.DB.Where("command = ? AND tags LIKE ?", command, "%"+tag+"%").First(&existing).Error
-			}
+			tx := database.DB.Where("source_id = ? AND repo_task_id = ?", sourceID, repoTask.ID).Limit(1).Find(&existing)
 
-			if err == nil {
+			if tx.RowsAffected > 0 {
 				// update
 				existing.Name = taskName
+				existing.Command = models.BigText(command)
 				existing.Schedule = normalizeCron(taskCron)
 				existing.Languages = repoTask.Languages
 				existing.SourceID = sourceID
@@ -286,6 +313,8 @@ func ParseRepoScriptsAndAddCron(es *ExecutorService, repoTask *models.Task) {
 				if existing.Enabled && es != nil {
 					es.AddCronTask(&existing)
 				}
+				log("[更新] 任务: %s (%s)", taskName, filename)
+				updateTaskCount++
 				foundSourceIDs[sourceID] = true
 			} else {
 				// create new
@@ -310,6 +339,8 @@ func ParseRepoScriptsAndAddCron(es *ExecutorService, repoTask *models.Task) {
 				if es != nil {
 					es.AddCronTask(newTask)
 				}
+				log("[新增] 任务: %s (%s)", taskName, filename)
+				newTaskCount++
 				foundSourceIDs[sourceID] = true
 			}
 		}
@@ -318,10 +349,13 @@ func ParseRepoScriptsAndAddCron(es *ExecutorService, repoTask *models.Task) {
 	})
 
 	// 清理该仓库任务下不再存在的旧脚本任务
+	deletedTaskCount := 0
 	var oldTasks []models.Task
 	if err := database.DB.Where("repo_task_id = ?", repoTask.ID).Find(&oldTasks).Error; err == nil {
 		for _, ot := range oldTasks {
 			if !foundSourceIDs[ot.SourceID] {
+				log("[移除] 脚本已不存在，删除对应任务: %s", ot.Name)
+				deletedTaskCount++
 				if es != nil {
 					if es.taskService != nil {
 						es.taskService.DeleteTask(ot.ID)
@@ -334,6 +368,9 @@ func ParseRepoScriptsAndAddCron(es *ExecutorService, repoTask *models.Task) {
 			}
 		}
 	}
+
+	log("\n扫描完成: [新增 %d] [更新 %d] [移除 %d]", newTaskCount, updateTaskCount, deletedTaskCount)
+	log("----------------------------------------")
 }
 
 func sanitizeIdentifier(s string) string {

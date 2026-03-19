@@ -29,17 +29,22 @@ func New() *App {
 	return app
 }
 
-// InitBasic 初始化基础环境（配置和数据库），不启动后台服务和路由
 func InitBasic() *App {
 	app := &App{}
 	utils.InitRuntime()
-	app.initConfig()
+	
+	// 自动加载配置 (内部会自动处理 BH_CONFIG_PATH 环境变量与默认路径的优先级)
+	app.initConfigWithPath("")
 	app.initDatabase()
 	return app
 }
 
 func (a *App) initConfig() {
-	cfg, err := services.LoadConfig(constant.ConfigPath)
+	a.initConfigWithPath(constant.ConfigPath)
+}
+
+func (a *App) initConfigWithPath(path string) {
+	cfg, err := services.LoadConfig(path)
 	if err != nil {
 		logger.Fatalf("Failed to load config: %v", err)
 	}

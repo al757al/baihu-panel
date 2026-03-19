@@ -12,7 +12,7 @@ import DirTreeSelect from '@/components/DirTreeSelect.vue'
 import { Plus, ChevronDown, X, Search, Check, ChevronsUpDown, Loader2, AlertCircle, Terminal, Clock, Zap } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
 import { api, type Task, type EnvVar, type Agent, type MiseLanguage } from '@/api'
-import { TRIGGER_TYPE } from '@/constants'
+import { PATHS, TRIGGER_TYPE } from '@/constants'
 import { toast } from 'vue-sonner'
 import { getCronDescription } from '@/utils/cron'
 
@@ -54,6 +54,8 @@ const workDirCache = ref<Record<string, string>>({})
 const concurrency = ref(0)
 const concurrencyEnabled = ref(false)
 const allEnvsEnabled = ref(false)
+const SCRIPTS_DIR_PLACEHOLDER = '$SCRIPTS_DIR$'
+const scriptsDir = ref(PATHS.SCRIPTS_DIR)
 
 const cronDescription = computed(() => {
   if (!form.value.schedule) return ''
@@ -307,6 +309,11 @@ watch(() => props.open, async (val) => {
     envSearchQuery.value = ''
     // 加载数据
     await loadData()
+    workDirCache.value = {
+      [agentId]: agentId === 'local'
+        ? normalizeLocalWorkDirForDisplay(props.task?.work_dir)
+        : (props.task?.work_dir || '')
+    }
     if (selectedAgentId.value === 'local') {
       await fetchInstalledLangs()
       // 更新所有语言的可用版本
@@ -319,12 +326,14 @@ watch(() => props.open, async (val) => {
 
 async function loadData() {
   try {
-    const [envs, agents] = await Promise.all([
+    const [envs, agents, paths] = await Promise.all([
       api.env.all(),
-      api.agents.list()
+      api.agents.list(),
+      api.settings.getPaths().catch(() => ({ scripts_dir: PATHS.SCRIPTS_DIR }))
     ])
     allEnvVars.value = envs
     allAgents.value = agents
+    scriptsDir.value = paths?.scripts_dir || PATHS.SCRIPTS_DIR
   } catch { /* ignore */ }
 }
 
@@ -336,6 +345,34 @@ function addEnv(id: string) {
 
 function removeEnv(id: string) {
   selectedEnvIds.value = selectedEnvIds.value.filter(envId => envId !== id)
+}
+
+function normalizeLocalWorkDirForDisplay(workDir?: string | null): string {
+  if (!workDir) return ''
+  if (workDir === SCRIPTS_DIR_PLACEHOLDER) return ''
+  if (workDir.startsWith(`${SCRIPTS_DIR_PLACEHOLDER}/`)) {
+    return workDir.slice(SCRIPTS_DIR_PLACEHOLDER.length + 1)
+  }
+  const base = scriptsDir.value || PATHS.SCRIPTS_DIR
+  if (workDir === base) return ''
+  if (workDir.startsWith(`${base}/`)) {
+    return workDir.slice(base.length + 1)
+  }
+  return workDir
+}
+
+function encodeLocalWorkDir(workDir?: string | null): string {
+  const value = workDir?.trim() || ''
+  if (!value) return SCRIPTS_DIR_PLACEHOLDER
+  if (value === SCRIPTS_DIR_PLACEHOLDER || value.startsWith(`${SCRIPTS_DIR_PLACEHOLDER}/`)) {
+    return value
+  }
+  const base = scriptsDir.value || PATHS.SCRIPTS_DIR
+  if (value === base) return SCRIPTS_DIR_PLACEHOLDER
+  if (value.startsWith(`${base}/`)) {
+    return `${SCRIPTS_DIR_PLACEHOLDER}/${value.slice(base.length + 1)}`
+  }
+  return `${SCRIPTS_DIR_PLACEHOLDER}/${value.replace(/^\/+/, '')}`
 }
 
 async function save() {
@@ -376,7 +413,9 @@ async function save() {
     form.value.config = JSON.stringify(config)
 
     // 保存当前选择的执行位置对应的工作目录
-    form.value.work_dir = currentWorkDir.value
+    form.value.work_dir = selectedAgentId.value === 'local'
+      ? encodeLocalWorkDir(currentWorkDir.value)
+      : currentWorkDir.value
 
     if (props.isEdit && form.value.id) {
       await api.tasks.update(form.value.id, form.value)

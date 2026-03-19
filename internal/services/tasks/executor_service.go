@@ -241,9 +241,7 @@ func (h *ServerSchedulerHandler) OnTaskCompleted(req *executor.ExecutionRequest,
 	// 处理任务完成（更新统计、清理旧日志等）
 	h.es.taskLogService.ProcessTaskCompletion(taskLog)
 
-	if task.Type == constant.TaskTypeRepo && result.Status == constant.TaskStatusSuccess {
-		go ParseRepoScriptsAndAddCron(h.es, task)
-	}
+
 
 	// 更新内存缓冲
 	h.es.UpdateResult(*result)
@@ -966,6 +964,13 @@ func (es *ExecutorService) BuildRepoCommand(task *models.Task) (string, string) 
 	if config.Extensions != "" {
 		args = append(args, "--extensions", config.Extensions)
 	}
+	
+	// 传递任务 ID，以便 reposync 内部直接处理脚本注册并输出日志
+	args = append(args, "--task-id", task.ID)
+	args = append(args, "--task-timeout", fmt.Sprintf("%d", task.Timeout))
+	if langData, err := json.Marshal(task.Languages); err == nil {
+		args = append(args, "--task-langs", string(langData))
+	}
 
 	// 为了防止 shell 解释特殊字符（如 |），对每个参数进行转义/加引号
 	quotedArgs := make([]string, len(args))
@@ -974,7 +979,8 @@ func (es *ExecutorService) BuildRepoCommand(task *models.Task) (string, string) 
 		quotedArgs[i] = "'" + strings.ReplaceAll(arg, "'", "'\\''") + "'"
 	}
 
-	return "'" + strings.ReplaceAll(exePath, "'", "'\\''") + "' " + strings.Join(quotedArgs, " "), filepath.Dir(exePath)
+	cmdStr := "'" + strings.ReplaceAll(exePath, "'", "'\\''") + "' " + strings.Join(quotedArgs, " ")
+	return buildRepoCommandEnvPrefix()+cmdStr, filepath.Dir(exePath)
 }
 
 // loadEnvVars 加载环境变量，支持全局注入及重名合并
@@ -1007,6 +1013,45 @@ func (es *ExecutorService) loadEnvVars(taskID string, envIDs string) []string {
 }
 
 func (es *ExecutorService) ResolvePath(path string) string {
-	absScriptsDir, _ := filepath.Abs(constant.ScriptsWorkDir)
+	absScriptsDir := resolveAbsScriptsDir()
 	return strings.ReplaceAll(path, "$SCRIPTS_DIR$", absScriptsDir)
+}
+
+func buildRepoCommandEnvPrefix() string {
+	absConfig, err := filepath.Abs(constant.ConfigPath)
+	if err != nil {
+		absConfig = constant.ConfigPath
+	}
+
+	absScriptsDir := resolveAbsScriptsDir()
+	return "BH_CONFIG_PATH='" + strings.ReplaceAll(absConfig, "'", "'\\''") + "' BH_SCRIPTS_DIR='" + strings.ReplaceAll(absScriptsDir, "'", "'\\''") + "' "
+}
+
+func resolveAbsScriptsDir() string {
+	if scriptsDir := os.Getenv("BH_SCRIPTS_DIR"); scriptsDir != "" {
+		if filepath.IsAbs(scriptsDir) {
+			return filepath.Clean(scriptsDir)
+		}
+		if absScriptsDir, err := filepath.Abs(scriptsDir); err == nil {
+			return absScriptsDir
+		}
+		return filepath.Clean(scriptsDir)
+	}
+
+	if configPath := os.Getenv("BH_CONFIG_PATH"); configPath != "" {
+		if !filepath.IsAbs(configPath) {
+			if absConfigPath, err := filepath.Abs(configPath); err == nil {
+				configPath = absConfigPath
+			}
+		}
+
+		projectRoot := filepath.Dir(filepath.Dir(configPath))
+		return filepath.Clean(filepath.Join(projectRoot, constant.ScriptsWorkDir))
+	}
+
+	if absScriptsDir, err := filepath.Abs(constant.ScriptsWorkDir); err == nil {
+		return absScriptsDir
+	}
+
+	return filepath.Clean(constant.ScriptsWorkDir)
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, onUnmounted } from 'vue'
 import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
@@ -218,6 +218,30 @@ const showLogViewer = ref(false)
 const selectedLogId = ref<string | undefined>()
 const latestLogStatus = ref('')
 const latestLogTitle = ref('')
+const logContent = ref('')
+let logSocket: WebSocket | null = null
+
+function cleanupLogSocket() {
+  if (logSocket) {
+    logSocket.onopen = null
+    logSocket.onmessage = null
+    logSocket.onerror = null
+    logSocket.onclose = null
+    logSocket.close()
+    logSocket = null
+  }
+}
+
+watch(showLogViewer, (val) => {
+  if (!val) {
+    cleanupLogSocket()
+    logContent.value = ''
+  }
+})
+
+onUnmounted(() => {
+  cleanupLogSocket()
+})
 
 async function viewLogs(taskId: string) {
   try {
@@ -228,7 +252,25 @@ async function viewLogs(taskId: string) {
       latestLogTitle.value = latestLog.task_name || ''
       latestLogStatus.value = latestLog.status || ''
       selectedLogId.value = latestLog.id
+      logContent.value = ''
       showLogViewer.value = true
+
+      // Connect WebSocket to load log content
+      cleanupLogSocket()
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const host = window.location.host
+      const baseUrl = (window as any).__BASE_URL__ || ''
+      const apiVersion = (window as any).__API_VERSION__ || '/api/v1'
+      const wsUrl = `${protocol}//${host}${baseUrl}${apiVersion}/logs/ws?log_id=${latestLog.id}`
+
+      logSocket = new WebSocket(wsUrl)
+      logSocket.onmessage = (event) => {
+        if (latestLog.status !== 'running') {
+          logContent.value = event.data
+        } else {
+          logContent.value += event.data
+        }
+      }
     } else {
       toast.info('该任务暂无执行日志')
     }
@@ -460,8 +502,8 @@ watch(() => route.query.agent_id, (newVal) => {
     <RepoDialog v-model:open="showRepoDialog" :task="editingTask" :is-edit="isEdit" @saved="loadTasks" />
 
     <!-- 最新日志全屏查看 -->
-    <LogViewer v-model:open="showLogViewer" :task-name="latestLogTitle"
-      :log-id="selectedLogId" :initial-status="latestLogStatus" />
+    <LogViewer v-model:open="showLogViewer" :title="`最新日志 - ${latestLogTitle}`"
+      :content="logContent || '无输出'" :status="latestLogStatus" />
 
     <!-- 删除确认 (批量) -->
     <AlertDialog v-model:open="showBatchDeleteDialog">
