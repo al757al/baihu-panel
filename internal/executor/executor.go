@@ -113,6 +113,18 @@ func ExecuteWithHooks(ctx context.Context, req Request, stdout, stderr io.Writer
 	execCtx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Minute)
 	defer cancel()
 
+	// 隐式且静默地获取包含 node 环境的全局路径，并注入环境变量 (带极速缓存)
+	if req.UseMise {
+		for _, lang := range req.Languages {
+			if lang["name"] == "node" {
+				if nodePath := utils.GetMiseNodePath(lang["version"]); nodePath != "" {
+					req.Envs = append(req.Envs, "NODE_PATH="+nodePath)
+				}
+				break
+			}
+		}
+	}
+
 	// 如果指定使用 mise，则预先构建好带 mise 的命令，这样 PreExecute 记录的就是完整命令
 	if req.UseMise {
 		req.Command = utils.BuildMiseCommand(req.Command, req.Languages)

@@ -1,8 +1,36 @@
 package utils
 
 import (
+	"os/exec"
 	"strings"
+	"sync"
 )
+
+var nodePathCache sync.Map
+
+// GetMiseNodePath 获取指定版本的 node 全局包路径，使用内存缓存避免重复获取
+func GetMiseNodePath(version string) string {
+	if version == "" {
+		version = "latest"
+	}
+
+	if val, ok := nodePathCache.Load(version); ok {
+		return val.(string)
+	}
+
+	cmd := exec.Command("mise", "where", "node@"+version)
+	out, err := cmd.Output()
+	if err == nil {
+		nodeDir := strings.TrimSpace(string(out))
+		if nodeDir != "" {
+			nodePath := nodeDir + "/lib/node_modules"
+			nodePathCache.Store(version, nodePath)
+			return nodePath
+		}
+	}
+
+	return ""
+}
 
 // BuildMiseCommand 构建多语言 mise 执行命令 (字符串形式)
 func BuildMiseCommand(command string, languages []map[string]string) string {

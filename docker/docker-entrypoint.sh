@@ -78,9 +78,6 @@ log "  - node: $(node --version 2>&1 | head -n 1 || echo "not found")"
 log "Checking npm..."
 log "  - npm: $(npm --version 2>&1 | head -n 1 || echo "not found")"
 
-#export NODE_PATH=$(npm root -g 2>/dev/null || echo "")
-#log "  - node_path: $NODE_PATH"
-
 # ============================
 # 将 baihu 注册到全局命令
 # ============================
