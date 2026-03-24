@@ -299,6 +299,8 @@ export const api = {
     getBindings: () => request<NotifyBinding[]>('/notify/bindings'),
     saveBinding: (data: Partial<NotifyBinding>) =>
       request<NotifyBinding>('/notify/bindings', { method: 'POST', body: JSON.stringify(data) }),
+    saveBindingsBatch: (data: { type: string; data_id: string; bindings: Partial<NotifyBinding>[] }) =>
+      request('/notify/bindings/batch', { method: 'POST', body: JSON.stringify(data) }),
     deleteBinding: (id: string) => request('/notify/bindings/' + id, { method: 'DELETE' }),
     send: (data: { channel_id: string; title: string; text: string }) =>
       request<NotifyResult>('/notify/send', { method: 'POST', body: JSON.stringify(data) })
@@ -595,8 +597,14 @@ export interface NotifyBinding {
   event: string
   way_id: string
   data_id: string
+  extra?: string
   created_at?: string
   updated_at?: string
+}
+
+export interface BindingExtra {
+  enable_log: boolean
+  log_limit: number
 }
 
 export interface NotifyResult {

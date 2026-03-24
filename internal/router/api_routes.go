@@ -231,6 +231,7 @@ func registerNotificationRoutes(g *gin.RouterGroup, c *Controllers) {
 		notify.POST("/channels/test", c.Notification.TestChannel)
 		notify.GET("/bindings", c.Notification.GetBindings)
 		notify.POST("/bindings", c.Notification.SaveBinding)
+		notify.POST("/bindings/batch", c.Notification.BatchSaveBindings)
 		notify.DELETE("/bindings/:id", c.Notification.DeleteBinding)
 	}
 }

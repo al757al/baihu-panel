@@ -269,6 +269,8 @@ func (h *ServerSchedulerHandler) OnTaskCompleted(req *executor.ExecutionRequest,
 					"task_name": task.Name,
 					"status":    result.Status,
 					"duration":  result.Duration,
+					"output":    result.Output,
+					"error":     result.Error,
 				},
 			})
 		}
@@ -346,6 +348,7 @@ func (h *ServerSchedulerHandler) OnTaskFailed(req *executor.ExecutionRequest, er
 				"task_id":   taskID,
 				"task_name": taskName,
 				"error":     err.Error(),
+				"output":    output,
 			},
 		})
 	}()

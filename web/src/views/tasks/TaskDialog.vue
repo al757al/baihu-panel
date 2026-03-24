@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import DirTreeSelect from '@/components/DirTreeSelect.vue'
-import { Plus, ChevronDown, X, Search, Check, ChevronsUpDown, Loader2, AlertCircle, Terminal, Clock, Zap } from 'lucide-vue-next'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Plus, ChevronDown, X, Search, Check, ChevronsUpDown, Loader2, AlertCircle, Terminal, Clock, Zap, Bell } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
-import { api, type Task, type EnvVar, type Agent, type MiseLanguage } from '@/api'
+import { api, type Task, type EnvVar, type Agent, type MiseLanguage, type NotifyChannel, type NotifyBinding } from '@/api'
 import { PATHS, TRIGGER_TYPE } from '@/constants'
 import { toast } from 'vue-sonner'
 import { getCronDescription } from '@/utils/cron'
@@ -138,6 +139,130 @@ const selectedLangs = ref<{ name: string; version: string; availableVersions: st
 const availablePlugins = ref<string[]>([])
 const pluginSearch = ref('')
 const versionSearch = ref('')
+
+// 通知配置相关
+const notifyChannels = ref<NotifyChannel[]>([])
+const notifyWayId = ref<string>('none')
+const notifyOnSuccess = ref(false)
+const notifyOnFailure = ref(false)
+const notifyOnTimeout = ref(false)
+const notifyIncludeLog = ref(false)
+const notifyLogLimit = ref(1000)
+
+async function loadNotificationConfig() {
+  try {
+    notifyChannels.value = await api.notify.getChannels()
+    if (props.isEdit && props.task?.id) {
+      const allBindings = await api.notify.getBindings()
+      const taskBindings = allBindings.filter(b => b.data_id === props.task!.id && b.type === 'task')
+      
+      console.log('DEBUG [loadNotificationConfig] TaskID:', props.task!.id, 'Total:', allBindings.length, 'Matched:', taskBindings.length)
+
+      if (taskBindings.length > 0) {
+        notifyWayId.value = taskBindings[0].way_id
+        
+        // 使用 nextTick 确保 UI 响应
+        setTimeout(() => {
+          notifyOnSuccess.value = taskBindings.some(b => b.event === 'task_success')
+          notifyOnFailure.value = taskBindings.some(b => b.event === 'task_failed')
+          notifyOnTimeout.value = taskBindings.some(b => b.event === 'task_timeout')
+          
+          console.log('DEBUG [loadNotificationConfig] States Set:', {
+            success: notifyOnSuccess.value,
+            failure: notifyOnFailure.value,
+            timeout: notifyOnTimeout.value
+          })
+
+          // 尝试解析日志配置
+          const extraBinding = taskBindings.find(b => b.extra && b.extra !== '')
+          if (extraBinding) {
+            try {
+              const extra = JSON.parse(extraBinding.extra)
+              notifyIncludeLog.value = !!extra.enable_log
+              notifyLogLimit.value = extra.log_limit || 1000
+            } catch {
+              notifyIncludeLog.value = false
+              notifyLogLimit.value = 1000
+            }
+          } else {
+            notifyIncludeLog.value = false
+            notifyLogLimit.value = 1000
+          }
+        }, 50)
+      } else {
+        resetNotificationConfig()
+      }
+    } else {
+      resetNotificationConfig()
+    }
+  } catch (e) {
+    console.error('Load notifications failed', e)
+    resetNotificationConfig()
+  }
+}
+
+function resetNotificationConfig() {
+  notifyWayId.value = 'none'
+  notifyOnSuccess.value = false
+  notifyOnFailure.value = false
+  notifyOnTimeout.value = false
+  notifyIncludeLog.value = false
+  notifyLogLimit.value = 1000
+}
+
+async function saveNotifications(taskId: string) {
+  console.log('DEBUG [saveNotifications]:', {
+    taskId,
+    notifyWayId: notifyWayId.value,
+    notifyOnSuccess: notifyOnSuccess.value,
+    notifyOnFailure: notifyOnFailure.value,
+    notifyOnTimeout: notifyOnTimeout.value,
+    notifyIncludeLog: notifyIncludeLog.value,
+    notifyLogLimit: notifyLogLimit.value
+  })
+
+  try {
+    const bindings: Partial<NotifyBinding>[] = []
+
+    if (notifyWayId.value !== 'none') {
+      const events = [
+        { type: 'task_success', enabled: notifyOnSuccess.value },
+        { type: 'task_failed', enabled: notifyOnFailure.value },
+        { type: 'task_timeout', enabled: notifyOnTimeout.value }
+      ]
+
+      const extra = JSON.stringify({
+        enable_log: notifyIncludeLog.value,
+        log_limit: notifyLogLimit.value
+      })
+
+      for (const event of events) {
+        if (event.enabled) {
+          bindings.push({
+            event: event.type,
+            way_id: notifyWayId.value,
+            extra: extra
+          })
+        }
+      }
+    }
+
+    console.log('DEBUG [saveNotifications] payload bindings:', bindings)
+
+    // 调用批量保存，后端会自动清理该任务旧的绑定
+    await api.notify.saveBindingsBatch({
+      type: 'task',
+      data_id: taskId,
+      bindings: bindings
+    })
+  } catch (e) {
+    console.error('Save notifications failed', e)
+  }
+}
+
+watch(notifyOnSuccess, (val) => console.log('DEBUG [notifyOnSuccess]:', val))
+watch(notifyOnFailure, (val) => console.log('DEBUG [notifyOnFailure]:', val))
+watch(notifyOnTimeout, (val) => console.log('DEBUG [notifyOnTimeout]:', val))
 
 const filteredPlugins = computed(() => {
   if (!pluginSearch.value) return availablePlugins.value
@@ -329,6 +454,8 @@ watch(() => props.open, async (val) => {
         updateAvailableVersions(lang)
       })
     }
+    // 加载通知配置
+    await loadNotificationConfig()
   }
 })
 
@@ -426,10 +553,12 @@ async function save() {
       : currentWorkDir.value
 
     if (props.isEdit && form.value.id) {
-      await api.tasks.update(form.value.id, form.value)
+      const task = await api.tasks.update(form.value.id, form.value)
+      await saveNotifications(task.id)
       toast.success('任务已更新')
     } else {
-      await api.tasks.create(form.value)
+      const task = await api.tasks.create(form.value)
+      await saveNotifications(task.id)
       toast.success('任务已创建')
     }
     emit('update:open', false)
@@ -865,19 +994,90 @@ async function save() {
                 </div>
               </div>
             </section>
-          </div>
-        </ScrollArea>
 
-        <div class="flex items-center justify-between px-6 py-4 bg-muted/20 border-t shrink-0 backdrop-blur-sm">
-          <p class="text-[10px] text-muted-foreground/50 italic">最后编辑于: {{ isEdit ? (form.updated_at || '刚才') : '现在' }}</p>
-          <div class="flex gap-3">
-            <Button variant="ghost" size="sm" class="hover:bg-muted font-medium text-xs px-6" @click="emit('update:open', false)">取消</Button>
-            <Button size="sm" class="px-8 font-semibold text-xs shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98] bg-primary hover:bg-primary/90" @click="save">
-              确定保存
-            </Button>
-          </div>
+          <!-- 通知配置 Section -->
+          <section class="space-y-4">
+            <div class="flex items-center gap-2 mb-1">
+              <div class="h-4 w-1 bg-primary rounded-full" />
+              <h3 class="text-sm font-semibold text-foreground/80">通知配置</h3>
+            </div>
+
+            <div class="grid gap-4 pl-3 border-l border-muted">
+              <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
+                <Label class="sm:text-right text-xs text-muted-foreground uppercase tracking-wider">通知渠道</Label>
+                <div class="sm:col-span-3">
+                  <Select v-model="notifyWayId">
+                    <SelectTrigger class="h-9 bg-muted/30 border-muted-foreground/20">
+                      <SelectValue placeholder="不启用通知" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">不启用通知</SelectItem>
+                      <SelectItem v-for="ch in notifyChannels" :key="ch.id" :value="ch.id">
+                        {{ ch.name }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <template v-if="notifyWayId !== 'none'">
+                <div class="grid grid-cols-1 sm:grid-cols-4 items-start gap-3">
+                  <Label class="sm:text-right text-xs text-muted-foreground uppercase tracking-wider pt-1.5">通知时机</Label>
+                  <div class="sm:col-span-3 space-y-3">
+                    <div class="flex flex-wrap gap-4 p-3 rounded-lg bg-muted/20 border border-muted-foreground/10 items-center">
+                      <div class="flex items-center gap-2 group">
+                        <Checkbox :id="`ns-${props.task?.id || 'new'}`" v-model:checked="notifyOnSuccess" />
+                        <label :for="`ns-${props.task?.id || 'new'}`" class="text-xs shrink-0 cursor-pointer group-hover:text-primary transition-colors">成功时</label>
+                      </div>
+                      <div class="flex items-center gap-2 group">
+                        <Checkbox :id="`nf-${props.task?.id || 'new'}`" v-model:checked="notifyOnFailure" />
+                        <label :for="`nf-${props.task?.id || 'new'}`" class="text-xs shrink-0 cursor-pointer group-hover:text-primary transition-colors">失败时</label>
+                      </div>
+                      <div class="flex items-center gap-2 group">
+                        <Checkbox :id="`nt-${props.task?.id || 'new'}`" v-model:checked="notifyOnTimeout" />
+                        <label :for="`nt-${props.task?.id || 'new'}`" class="text-xs shrink-0 cursor-pointer group-hover:text-primary transition-colors">超时时</label>
+                      </div>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-primary/5 border border-primary/10 space-y-3">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2 text-xs font-semibold">
+                          <Bell :class="cn('h-3.5 w-3.5', notifyIncludeLog ? 'text-primary' : 'text-muted-foreground')" />
+                          附带执行日志
+                        </div>
+                        <Switch :model-value="notifyIncludeLog" @update:model-value="(v: boolean) => notifyIncludeLog = v" />
+                      </div>
+                      
+                      <div v-if="notifyIncludeLog" class="flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200 pl-5">
+                        <div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-background/60 border border-muted-foreground/10 focus-within:border-primary/30 transition-all shadow-sm">
+                          <span class="text-[10px] text-muted-foreground opacity-60 whitespace-nowrap">长度限制</span>
+                          <div class="h-3 w-[1px] bg-muted-foreground/10" />
+                          <div class="flex items-center gap-1">
+                            <input type="text" inputmode="numeric" :value="notifyLogLimit" @input="(e: any) => notifyLogLimit = Number(e.target.value.replace(/\D/g, ''))" 
+                              class="w-14 h-4 text-center text-[11px] font-mono bg-transparent border-none outline-none focus:ring-0 p-0" />
+                            <span class="text-[10px] text-muted-foreground opacity-40">字</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </section>
+        </div>
+      </ScrollArea>
+
+      <div class="flex items-center justify-between px-6 py-4 bg-muted/20 border-t shrink-0 backdrop-blur-sm">
+        <p class="text-[10px] text-muted-foreground/50 italic">最后编辑于: {{ isEdit ? (form.updated_at || '刚才') : '现在' }}</p>
+        <div class="flex gap-3">
+          <Button variant="ghost" size="sm" class="hover:bg-muted font-medium text-xs px-6" @click="emit('update:open', false)">取消</Button>
+          <Button size="sm" class="px-8 font-semibold text-xs shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98] bg-primary hover:bg-primary/90" @click="save">
+            确定保存
+          </Button>
         </div>
       </div>
-    </DialogContent>
-  </Dialog>
+    </div>
+  </DialogContent>
+</Dialog>
 </template>
