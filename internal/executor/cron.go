@@ -140,7 +140,7 @@ func (m *CronManager) AddTask(task CronTask) error {
 	}
 
 	m.entryMap[taskID] = entryID
-	m.logger.Infof("[CronManager] 任务已调度 #%s %s (%s)", taskID, name, task.GetSchedule())
+	m.logger.Infof("[CronManager] 任务已添加调度 #%s %s (%s)", taskID, name, task.GetSchedule())
 
 	// 初始触发一次下次运行时间通知
 	go func() {

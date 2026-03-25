@@ -357,17 +357,17 @@ func (s *NotificationService) handleEvent(bindingType string) eventbus.Handler {
 			text = fmt.Sprintf("用户 %v 刚刚修改了密码", payload["username"])
 		case constant.EventTaskSuccess:
 			title = fmt.Sprintf("任务[%v] 成功", payload["task_name"])
-			text = fmt.Sprintf("任务 #%v %v\n状态: 成功\n耗时: %vms", payload["task_id"], payload["task_name"], payload["duration"])
+			text = fmt.Sprintf("任务 #%v %v\n状态: 成功\n执行时间: %v\n耗时: %vms", payload["task_id"], payload["task_name"], payload["start_time"], payload["duration"])
 		case constant.EventTaskFailed:
 			title = fmt.Sprintf("任务[%v] 失败", payload["task_name"])
 			if errStr, ok := payload["error"]; ok {
-				text = fmt.Sprintf("任务 #%v %v\n执行失败\n错误: %v", payload["task_id"], payload["task_name"], errStr)
+				text = fmt.Sprintf("任务 #%v %v\n执行失败\n执行时间: %v\n错误: %v", payload["task_id"], payload["task_name"], payload["start_time"], errStr)
 			} else {
-				text = fmt.Sprintf("任务 #%v %v\n执行失败\n状态: %v\n耗时: %vms", payload["task_id"], payload["task_name"], payload["status"], payload["duration"])
+				text = fmt.Sprintf("任务 #%v %v\n执行失败\n状态: %v\n执行时间: %v\n耗时: %vms", payload["task_id"], payload["task_name"], payload["status"], payload["start_time"], payload["duration"])
 			}
 		case constant.EventTaskTimeout:
 			title = fmt.Sprintf("任务[%v] 超时", payload["task_name"])
-			text = fmt.Sprintf("任务 #%v %v\n执行超时\n耗时: %vms", payload["task_id"], payload["task_name"], payload["duration"])
+			text = fmt.Sprintf("任务 #%v %v\n执行超时\n执行时间: %v\n耗时: %vms", payload["task_id"], payload["task_name"], payload["start_time"], payload["duration"])
 		case constant.EventSystemNotice:
 			title, _ = payload["title"].(string)
 			text, _ = payload["content"].(string)

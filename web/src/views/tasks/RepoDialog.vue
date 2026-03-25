@@ -15,6 +15,9 @@ import { api, type Task, type RepoConfig, type Agent, type MiseLanguage } from '
 import { toast } from 'vue-sonner'
 import { cn } from '@/lib/utils'
 import { getCronDescription } from '@/utils/cron'
+import TaskNotificationConfig from './components/TaskNotificationConfig.vue'
+
+const notificationConfigRef = ref<InstanceType<typeof TaskNotificationConfig> | null>(null)
 
 const props = defineProps<{
   open: boolean
@@ -361,6 +364,8 @@ watch(() => props.open, async (val) => {
         updateAvailableVersions(lang)
       })
     }
+    // 加载通知配置
+    await notificationConfigRef.value?.loadConfig(props.isEdit ? props.task?.id : undefined)
   }
 })
 
@@ -400,9 +405,11 @@ async function save() {
     form.value.agent_id = selectedAgentId.value === 'local' ? null : selectedAgentId.value
     if (props.isEdit && form.value.id) {
       await api.tasks.update(form.value.id, form.value)
+      await notificationConfigRef.value?.saveConfig(form.value.id)
       toast.success('同步任务已更新')
     } else {
-      await api.tasks.create(form.value)
+      const task = await api.tasks.create(form.value)
+      await notificationConfigRef.value?.saveConfig(task.id)
       toast.success('同步任务已创建')
     }
     emit('update:open', false)
@@ -535,7 +542,7 @@ async function save() {
                   <Label class="sm:text-right text-xs text-muted-foreground uppercase tracking-wider">下载模式</Label>
                   <div class="sm:col-span-3">
                     <div class="flex items-center space-x-2 bg-muted/20 px-3 py-1.5 rounded-full border border-muted-foreground/10 w-fit">
-                      <Checkbox id="single-file-sync" v-model:checked="isSingleFile" class="scale-90" />
+                      <Checkbox id="single-file-sync" v-model="isSingleFile" class="scale-90" />
                       <Label for="single-file-sync" class="text-[11px] font-medium cursor-pointer">作为单文件直接下载</Label>
                     </div>
                   </div>
@@ -821,6 +828,9 @@ async function save() {
                 </div>
               </div>
             </section>
+
+            <!-- 通知配置 -->
+            <TaskNotificationConfig ref="notificationConfigRef" :task-id="isEdit ? task?.id : undefined" />
           </div>
         </ScrollArea>
 
