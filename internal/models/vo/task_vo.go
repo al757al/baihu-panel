@@ -19,7 +19,7 @@ type TaskVO struct {
 	WorkDir     string              `json:"work_dir"`
 	CleanConfig string              `json:"clean_config"`
 	Envs        string              `json:"envs"`
-	Languages   []map[string]string `json:"languages"`
+	Languages   models.TaskLanguages `json:"languages"`
 	AgentID     *string             `json:"agent_id"`
 	RepoTaskID  string              `json:"repo_task_id"`
 	Enabled       bool                `json:"enabled"`

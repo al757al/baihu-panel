@@ -1,10 +1,41 @@
 package models
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"fmt"
 	"github.com/engigu/baihu-panel/internal/constant"
 
 	"gorm.io/gorm"
 )
+
+// TaskLanguages 自定义语言配置列表类型，处理 JSON 序列化
+type TaskLanguages []map[string]string
+
+func (t TaskLanguages) Value() (driver.Value, error) {
+	if t == nil {
+		return "[]", nil
+	}
+	b, err := json.Marshal(t)
+	return string(b), err
+}
+
+func (t *TaskLanguages) Scan(v interface{}) error {
+	if v == nil {
+		*t = nil
+		return nil
+	}
+	var data []byte
+	switch s := v.(type) {
+	case string:
+		data = []byte(s)
+	case []byte:
+		data = s
+	default:
+		return fmt.Errorf("invalid type for TaskLanguages: %T", v)
+	}
+	return json.Unmarshal(data, t)
+}
 
 // CleanConfig 清理配置结构
 type CleanConfig struct {
@@ -51,7 +82,7 @@ type Task struct {
 	WorkDir       string              `json:"work_dir" gorm:"size:255;default:''"`        // 工作目录，为空则使用 scripts 目录
 	CleanConfig   string              `json:"clean_config" gorm:"size:255;default:''"`    // 清理配置 JSON
 	Envs          BigText             `json:"envs"`                      // 环境变量ID列表，逗号分隔
-	Languages     []map[string]string `json:"languages" gorm:"serializer:json"` // 针对本地任务的语言配置列表
+	Languages     TaskLanguages       `json:"languages" gorm:"type:text"`                      // 针对本地任务的语言配置列表
 	AgentID       *string             `json:"agent_id" gorm:"size:20;index"`              // Agent ID，为空表示本地执行
 	RetryCount    int                 `json:"retry_count" gorm:"default:0"`               // 失败重试次数
 	RetryInterval int                 `json:"retry_interval" gorm:"default:0"`            // 失败重试间隔(秒)
@@ -97,7 +128,7 @@ func (t *Task) GetEnvs() string {
 }
 
 func (t *Task) GetLanguages() []map[string]string {
-	return t.Languages
+	return []map[string]string(t.Languages)
 }
 
 func (t *Task) GetEnvVars() []string {

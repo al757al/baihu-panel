@@ -67,7 +67,7 @@ func (tc *TaskController) CreateTask(c *gin.Context) {
 		WorkDir     string              `json:"work_dir"`
 		CleanConfig string              `json:"clean_config"`
 		Envs        string              `json:"envs"`
-		Languages   []map[string]string `json:"languages"`
+		Languages   models.TaskLanguages `json:"languages"`
 		AgentID       *string             `json:"agent_id"`
 		TriggerType   string              `json:"trigger_type"`
 		RetryCount    int                 `json:"retry_count"`
@@ -231,7 +231,7 @@ func (tc *TaskController) UpdateTask(c *gin.Context) {
 		CleanConfig string              `json:"clean_config"`
 		Envs        string              `json:"envs"`
 		Enabled     bool                `json:"enabled"`
-		Languages   []map[string]string `json:"languages"`
+		Languages   models.TaskLanguages `json:"languages"`
 		AgentID       *string             `json:"agent_id"`
 		TriggerType   string              `json:"trigger_type"`
 		RetryCount    int                 `json:"retry_count"`

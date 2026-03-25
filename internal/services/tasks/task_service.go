@@ -22,7 +22,7 @@ func (ts *TaskService) GetTaskBySourceID(sourceID string) *models.Task {
 	return &task
 }
 
-func (ts *TaskService) CreateTask(name, command, schedule string, timeout int, workDir, cleanConfig, envs, taskType, config string, agentID *string, languages []map[string]string, triggerType string, tags string, retryCount int, retryInterval int, randomRange int, sourceID string) *models.Task {
+func (ts *TaskService) CreateTask(name, command, schedule string, timeout int, workDir, cleanConfig, envs, taskType, config string, agentID *string, languages models.TaskLanguages, triggerType string, tags string, retryCount int, retryInterval int, randomRange int, sourceID string) *models.Task {
 	if taskType == "" {
 		taskType = "task"
 	}
@@ -99,7 +99,7 @@ func (ts *TaskService) GetTaskByID(id string) *models.Task {
 	return &task
 }
 
-func (ts *TaskService) UpdateTask(id string, name, command, schedule string, timeout int, workDir, cleanConfig, envs string, enabled bool, taskType, config string, agentID *string, languages []map[string]string, triggerType string, tags string, retryCount int, retryInterval int, randomRange int, sourceID string) *models.Task {
+func (ts *TaskService) UpdateTask(id string, name, command, schedule string, timeout int, workDir, cleanConfig, envs string, enabled bool, taskType, config string, agentID *string, languages models.TaskLanguages, triggerType string, tags string, retryCount int, retryInterval int, randomRange int, sourceID string) *models.Task {
 	var task models.Task
 	res := database.DB.Where("id = ?", id).Limit(1).Find(&task)
 	if res.Error != nil || res.RowsAffected == 0 {

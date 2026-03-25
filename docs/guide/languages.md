@@ -44,6 +44,24 @@
 ### 3. 多版本切换
 对于复杂的项目，您可以通过面板配置不同的任务版本镜像，系统基于 `mise exec` 实现了完善的环境隔离，不同版本的依赖包互不冲突。
 
+## 常用工具安装
+
+如果您需要在面板环境中使用 Ansible 或其他通过 pipx 管理的工具，可以使用以下命令进行快速安装：
+
+### 安装 Ansible
+
+白虎面板推荐通过 `mise` 结合 `pipx` 安装 Ansible，以保持环境隔离且全局可用：
+
+```bash
+# 首先安装 pipx
+mise use -g pipx@latest
+
+# 使用 pipx 安装 ansible
+mise use -g ansible@latest
+```
+
+安装完成后，您可以在「脚本管理」或「定时任务」中直接调用 `ansible` 或 `ansible-playbook` 命令。
+
 ---
 
 ## 隔离机制说明

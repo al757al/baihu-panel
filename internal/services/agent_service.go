@@ -351,7 +351,7 @@ func (s *AgentService) GetTasks(agentID string) []models.AgentTask {
 			Timeout:     task.Timeout,
 			WorkDir:     task.WorkDir,
 			Envs:        envVarsStr,
-			Languages:   task.Languages,
+			Languages:   []map[string]string(task.Languages),
 			RandomRange: task.RandomRange,
 			Enabled:     task.Enabled,
 		}
