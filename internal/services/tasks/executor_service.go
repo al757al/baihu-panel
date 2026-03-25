@@ -265,12 +265,13 @@ func (h *ServerSchedulerHandler) OnTaskCompleted(req *executor.ExecutionRequest,
 			eventbus.DefaultBus.Publish(eventbus.Event{
 				Type: eventType,
 				Payload: map[string]interface{}{
-					"task_id":   task.ID,
-					"task_name": task.Name,
-					"status":    result.Status,
-					"duration":  result.Duration,
-					"output":    result.Output,
-					"error":     result.Error,
+					"task_id":    task.ID,
+					"task_name":  task.Name,
+					"status":     result.Status,
+					"start_time": result.StartTime.Format("2006-01-02 15:04:05"),
+					"duration":   result.Duration,
+					"output":     result.Output,
+					"error":      result.Error,
 				},
 			})
 		}

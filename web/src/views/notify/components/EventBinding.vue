@@ -317,8 +317,8 @@ function setLogLimit(binding: NotifyBinding, limit: number) {
                           <FileText class="w-2.5 h-2.5" />
                           <span class="text-[9px]">发送日志</span>
                         </div>
-                        <Switch :checked="isLogEnabled(binding)"
-                          @update:checked="(val: boolean) => toggleLog(binding, val)" class="scale-75 origin-right" />
+                        <Switch :model-value="isLogEnabled(binding)"
+                          @update:model-value="(val: boolean) => toggleLog(binding, val)" class="scale-75 origin-right" />
                       </div>
 
                       <!-- 日志字数限制配置 -->
