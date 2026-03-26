@@ -115,7 +115,16 @@ async function fetchPaths() {
 
 const editorRef = shallowRef()
 const isSmallScreen = ref(window.innerWidth < 1024)
-const editorFontSize = computed(() => isSmallScreen.value ? 12 : 13)
+
+const editorOptions = computed(() => ({
+  minimap: { enabled: false },
+  fontSize: isSmallScreen.value ? 12 : 13,
+  lineNumbers: 'on' as const,
+  scrollBeyondLastLine: false,
+  readOnly: !isEditMode.value,
+  domReadOnly: !isEditMode.value,
+  automaticLayout: true,
+}))
 
 function handleEditorMount(editor: any) {
   editorRef.value = editor
@@ -473,14 +482,7 @@ onUnmounted(() => {
       </div>
       <div class="flex-1">
         <vue-monaco-editor v-if="selectedFile" v-model:value="fileContent" :language="getLanguage(selectedFile)"
-          theme="vs-dark" :options="{
-            minimap: { enabled: false },
-            fontSize: editorFontSize,
-            lineNumbers: 'on',
-            scrollBeyondLastLine: false,
-            readOnly: !isEditMode,
-            domReadOnly: !isEditMode
-          }" @mount="handleEditorMount" />
+          theme="vs-dark" :options="editorOptions" @mount="handleEditorMount" />
         <div v-else class="h-full flex items-center justify-center text-muted-foreground text-sm">
           <span class="lg:hidden">从上方选择文件开始编辑</span>
           <span class="hidden lg:inline">从左侧选择文件开始编辑</span>
