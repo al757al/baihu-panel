@@ -34,6 +34,7 @@ type CronTask interface {
 	Task
 	GetSchedule() string
 	UseMise() bool
+	GetSecrets() []string
 	GetRandomRange() int
 }
 

@@ -510,7 +510,7 @@ func (es *ExecutorService) AddCronTask(task *models.Task) error {
 		return nil
 	}
 	// 在加入调度器前，预先加载好环境信息
-	task.RuntimeEnvs, _ = es.loadEnvVars(task.ID, string(task.Envs))
+	task.RuntimeEnvs, task.RuntimeSecrets = es.loadEnvVars(task.ID, string(task.Envs))
 
 	return es.cronManager.AddTask(task)
 }
@@ -997,11 +997,10 @@ func (es *ExecutorService) BuildRepoCommand(task *models.Task) (string, string) 
 	// 为了防止 shell 解释特殊字符（如 |），对每个参数进行转义/加引号
 	quotedArgs := make([]string, len(args))
 	for i, arg := range args {
-		// 使用单引号包裹参数，并转义已有的单引号
-		quotedArgs[i] = "'" + strings.ReplaceAll(arg, "'", "'\\''") + "'"
+		quotedArgs[i] = utils.QuotePath(arg)
 	}
 
-	cmdStr := "'" + strings.ReplaceAll(exePath, "'", "'\\''") + "' " + strings.Join(quotedArgs, " ")
+	cmdStr := utils.QuotePath(exePath) + " " + strings.Join(quotedArgs, " ")
 	return buildRepoCommandEnvPrefix()+cmdStr, filepath.Dir(exePath)
 }
 

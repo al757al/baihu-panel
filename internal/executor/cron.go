@@ -85,6 +85,7 @@ func (m *CronManager) AddTask(task CronTask) error {
 	envs := task.GetEnvs()
 	languages := task.GetLanguages()
 	useMise := task.UseMise()
+	secrets := task.GetSecrets()
 
 	schedule := strings.TrimSpace(task.GetSchedule())
 	entryID, err := m.cron.AddFunc(schedule, func() {
@@ -109,6 +110,7 @@ func (m *CronManager) AddTask(task CronTask) error {
 					}
 					return ParseEnvVars(envs)
 				}(),
+				Secrets:   secrets,
 				Languages: languages,
 				UseMise:   useMise,
 			}

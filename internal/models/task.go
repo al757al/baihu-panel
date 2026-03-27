@@ -90,6 +90,7 @@ type Task struct {
 	Enabled       bool                `json:"enabled" gorm:"default:true"`
 	RunningGo     BigText             `json:"running_go"` // 正在运行的 go routine id 数组 (JSON)
 	RuntimeEnvs   []string            `json:"-" gorm:"-"`                  // 运行时环境变量（非持久化）
+	RuntimeSecrets []string           `json:"-" gorm:"-"`                  // 运行时安全机密（非持久化）
 	LastRun       *LocalTime          `json:"last_run"`
 	NextRun       *LocalTime          `json:"next_run"`
 	SourceID      string              `json:"source_id" gorm:"size:255;index"`            // 脚本资源唯一标识（路径 sanitized）
@@ -135,6 +136,10 @@ func (t *Task) GetEnvVars() []string {
 	return t.RuntimeEnvs
 }
 
+func (t *Task) GetSecrets() []string {
+	return t.RuntimeSecrets
+}
+
 func (t *Task) GetUseMise() bool {
 	return t.AgentID == nil || *t.AgentID == ""
 }
@@ -143,6 +148,7 @@ func (t *Task) UseMise() bool {
 	return t.GetUseMise()
 }
 
+// CronTask 计划任务接口
 func (t *Task) GetSchedule() string {
 	return t.Schedule
 }

@@ -403,17 +403,18 @@ func isDir(path string) bool {
 }
 
 func getCommandByExt(ext, path string) string {
+	quotedPath := utils.QuotePath(path)
 	switch ext {
 	case ".js", ".ts":
-		return fmt.Sprintf("node %s", path)
+		return fmt.Sprintf("node %s", quotedPath)
 	case ".py":
-		return fmt.Sprintf("python %s", path)
+		return fmt.Sprintf("python %s", quotedPath)
 	case ".sh":
-		return fmt.Sprintf("bash %s", path)
+		return fmt.Sprintf("bash %s", quotedPath)
 	case ".php":
-		return fmt.Sprintf("php %s", path)
+		return fmt.Sprintf("php %s", quotedPath)
 	}
-	return path
+	return quotedPath
 }
 
 func matchesQLPattern(rel, filename string, keywordsStr string) bool {
@@ -467,4 +468,9 @@ func splitKeywords(s string) []string {
 		}
 	}
 	return res
+}
+
+func resolveAbsScriptsDir() string {
+	cwd, _ := os.Getwd()
+	return filepath.Join(cwd, "data", "scripts")
 }
