@@ -42,6 +42,8 @@ const total = ref(0)
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 let durationTimer: ReturnType<typeof setInterval> | null = null
 
+const isRefreshing = ref(false)
+
 // 全屏查看
 const showFullscreen = ref(false)
 
@@ -62,6 +64,7 @@ const decompressedOutput = computed(() => {
 })
 
 async function loadLogs() {
+  isRefreshing.value = true
   try {
     const params: { page: number; page_size: number; task_id?: string; task_name?: string; status?: string } = {
       page: currentPage.value,
@@ -81,6 +84,8 @@ async function loadLogs() {
     total.value = response.total
   } catch {
     toast.error('加载日志失败')
+  } finally {
+    isRefreshing.value = false
   }
 }
 
@@ -338,8 +343,8 @@ watch(() => route.query, (newQuery) => {
             </SelectContent>
           </Select>
         </div>
-        <Button variant="outline" size="icon" class="h-9 w-9 shrink-0" @click="loadLogs" title="刷新">
-          <RefreshCw class="h-4 w-4" />
+        <Button variant="outline" size="icon" class="h-9 w-9 shrink-0" @click="loadLogs" title="刷新" :disabled="isRefreshing">
+          <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': isRefreshing }" />
         </Button>
         <Button variant="outline"
           class="h-9 px-4 shrink-0 text-sm text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20"
@@ -616,3 +621,16 @@ watch(() => route.query, (newQuery) => {
     </AlertDialog>
   </div>
 </template>
+
+<style scoped>
+:deep(.log-pre code) {
+  display: block;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+:deep(.log-pre span) {
+  vertical-align: top;
+}
+</style>

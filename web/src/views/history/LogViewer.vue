@@ -112,11 +112,22 @@ onUnmounted(() => {
           </div>
         </div>
         <div ref="scrollContainer" class="flex-1 overflow-auto bg-black/5 dark:bg-white/5" @scroll="handleScroll">
-          <div class="p-3 sm:p-4 text-xs font-mono whitespace-pre-wrap break-all leading-relaxed">
-            <Ansi>{{ content }}</Ansi>
-          </div>
+          <div class="p-3 sm:p-4 text-xs font-mono whitespace-pre-wrap break-all leading-relaxed"><Ansi>{{ content }}</Ansi></div>
         </div>
       </div>
     </div>
   </Teleport>
 </template>
+
+<style scoped>
+:deep(code) {
+  display: block;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+:deep(span) {
+  vertical-align: top;
+}
+</style>
