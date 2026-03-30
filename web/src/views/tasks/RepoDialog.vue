@@ -420,13 +420,11 @@ async function save() {
 
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogContent class="sm:max-w-[560px] p-0 overflow-hidden border-none bg-background/95 backdrop-blur-xl shadow-2xl" @openAutoFocus.prevent>
-      <div class="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none" />
-
+    <DialogContent class="sm:max-w-[560px] p-0 overflow-hidden border-none bg-background shadow-2xl" @openAutoFocus.prevent>
       <div class="flex flex-col max-h-[85vh]">
         <DialogHeader class="px-6 pr-12 pt-6 pb-2 shrink-0">
           <div class="flex items-center justify-between">
-            <DialogTitle class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+            <DialogTitle class="text-xl font-bold">
               {{ isEdit ? '编辑仓库同步' : '新建仓库同步' }}
             </DialogTitle>
             <Button v-if="!isEdit" variant="outline" size="sm" @click="importFromQl" class="h-8 gap-1.5 bg-primary/5 hover:bg-primary/10 border-primary/20 hover:border-primary/40 text-primary">
@@ -447,7 +445,7 @@ async function save() {
 
               <div class="grid gap-4 pl-3 border-l border-muted">
                 <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
-                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-medium">任务名称</Label>
+                  <Label class="sm:text-right text-xs text-muted-foreground uppercase tracking-wider font-semibold">任务名称</Label>
                   <Input v-model="form.name" placeholder="输入同步任务名称" class="sm:col-span-3 h-9 bg-muted/30 border-muted-foreground/20 focus:bg-background transition-all" />
                 </div>
 
@@ -485,7 +483,7 @@ async function save() {
 
               <div class="grid gap-4 pl-3 border-l border-muted">
                 <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
-                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-medium">源类型</Label>
+                  <Label class="sm:text-right text-xs text-muted-foreground uppercase tracking-wider font-semibold">源类型</Label>
                   <div class="sm:col-span-3">
                     <Select :model-value="repoConfig.source_type" @update:model-value="(v) => repoConfig.source_type = String(v || 'git')">
                       <SelectTrigger class="h-9 bg-muted/30 border-muted-foreground/20">
@@ -521,7 +519,7 @@ async function save() {
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
-                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-medium">目标路径</Label>
+                  <Label class="sm:text-right text-xs text-muted-foreground uppercase tracking-wider font-semibold">目标路径</Label>
                   <div class="sm:col-span-3">
                     <DirTreeSelect v-if="selectedAgentId === 'local'" :model-value="repoConfig.target_path || ''"
                       @update:model-value="v => repoConfig.target_path = v" class="h-9" />
@@ -734,8 +732,8 @@ async function save() {
             <!-- 调度策略 Section -->
             <section class="space-y-4">
               <div class="flex items-center gap-2 mb-1">
-                <div class="h-4 w-1 bg-primary rounded-full" />
-                <h3 class="text-sm font-bold text-foreground">调度策略</h3>
+                <div class="h-4 w-1 bg-primary rounded-full shadow-sm shadow-primary/20" />
+                <h3 class="text-sm font-bold text-foreground/90">调度策略</h3>
               </div>
 
               <div class="grid gap-5 pl-3 border-l border-muted">
@@ -763,7 +761,7 @@ async function save() {
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
-                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-medium">随机延迟</Label>
+                  <Label class="sm:text-right text-xs text-muted-foreground uppercase tracking-wider font-semibold">随机延迟</Label>
                   <div class="sm:col-span-3 flex items-center gap-4">
                     <div class="flex items-center gap-2">
                       <Input :model-value="form.random_range" @update:model-value="v => form.random_range = Number(v || 0)" type="number" :min="0" class="w-20 h-9 bg-muted/30 text-center" />
@@ -776,7 +774,7 @@ async function save() {
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-4 items-start gap-3">
-                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-medium">运行策略</Label>
+                  <Label class="sm:text-right text-xs text-muted-foreground uppercase tracking-wider font-semibold">运行策略</Label>
                   <div class="sm:col-span-3 space-y-4">
                     
                     <div class="p-3 rounded-xl bg-muted/20 border border-muted-foreground/10 space-y-2.5">
@@ -849,7 +847,7 @@ async function save() {
 
   <!-- 青龙导入提示对话框 -->
   <Dialog :open="showQlImportDialog" @update:open="v => showQlImportDialog = v">
-    <DialogContent class="sm:max-w-[425px] p-0 border-none bg-background/95 backdrop-blur-xl shadow-2xl">
+    <DialogContent class="sm:max-w-[425px] p-0 border-none bg-background shadow-2xl">
       <DialogHeader class="px-6 pt-6 pb-2">
         <DialogTitle class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
           请输入青龙面板的 ql repo 指令
