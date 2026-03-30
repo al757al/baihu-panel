@@ -272,7 +272,7 @@ func (es *ExecutorService) TriggerWorkflow(workflowID string, extraEnvs []string
 			envs := []string{
 				fmt.Sprintf("BAIHU_WF_ID=%s", wf.ID),
 				fmt.Sprintf("BAIHU_WF_RUN_ID=%s", runID),
-				fmt.Sprintf("BAIHU_WF_TRIGGER=manual"),
+				"BAIHU_WF_TRIGGER=manual",
 			}
 			envs = append(envs, extraEnvs...)
 			es.ExecuteTask(taskID, envs)
