@@ -36,7 +36,7 @@ func (es *EnvService) CreateEnvVar(name, value, remark, envType string, hidden, 
 		CreatedAt: models.Now(),
 		UpdatedAt: models.Now(),
 	}
-	database.DB.Create(env)
+	database.DB.Select("*").Create(env)
 	return env
 }
 

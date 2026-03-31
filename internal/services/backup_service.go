@@ -274,7 +274,7 @@ func restoreStreamBatch[T any](tx *gorm.DB, decoder *json.Decoder) error {
 		batch = append(batch, &m)
 
 		if len(batch) >= batchSize {
-			if err := tx.CreateInBatches(batch, batchSize).Error; err != nil {
+			if err := tx.Select("*").CreateInBatches(batch, batchSize).Error; err != nil {
 				return err
 			}
 			batch = nil // reset batch
@@ -282,7 +282,7 @@ func restoreStreamBatch[T any](tx *gorm.DB, decoder *json.Decoder) error {
 	}
 
 	if len(batch) > 0 {
-		return tx.CreateInBatches(batch, len(batch)).Error
+		return tx.Select("*").CreateInBatches(batch, len(batch)).Error
 	}
 
 	return nil
@@ -301,7 +301,7 @@ func (s *BackupService) restoreFromZipFile(tx *gorm.DB, f *zip.File, filename st
 		var settings []models.Setting
 		if err := json.Unmarshal(data, &settings); err == nil {
 			if len(settings) > 0 {
-				return tx.Create(&settings).Error
+				return tx.Select("*").Create(&settings).Error
 			}
 		}
 		return nil

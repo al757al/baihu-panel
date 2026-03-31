@@ -55,7 +55,7 @@ func (ts *TaskService) CreateTask(name, command, schedule string, timeout int, w
 	if triggerType != constant.TriggerTypeCron {
 		task.NextRun = nil
 	}
-	database.DB.Create(task)
+	database.DB.Select("*").Create(task)
 	return task
 }
 
