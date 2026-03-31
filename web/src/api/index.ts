@@ -242,7 +242,10 @@ export const api = {
     delete: (id: string) => request(`/deps/${id}`, { method: 'DELETE' }),
     install: (data: any) => request<any>('/deps/install', { method: 'POST', body: JSON.stringify(data) }),
     getInstallCmd: (data: any) => request<{ command: string }>('/deps/install-cmd', { method: 'POST', body: JSON.stringify(data) }),
-    uninstall: (id: string) => request<any>(`/deps/uninstall/${id}`, { method: 'POST' }),
+    uninstall: (id: string, force?: boolean) => {
+      const query = force ? '?force=true' : ''
+      return request<any>(`/deps/uninstall/${id}${query}`, { method: 'POST' })
+    },
     reinstall: (id: string) => request(`/deps/reinstall/${id}`, { method: 'POST' }),
     reinstallAll: (language: string, lang_version?: string) => {
       const query = new URLSearchParams({ language })

@@ -10,6 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Trash2, Package, Search, RefreshCw, Loader2, Download, FileText, RotateCw, ChevronLeft } from 'lucide-vue-next'
 import { api, type Dependency } from '@/api'
 import TextOverflow from '@/components/TextOverflow.vue'
+import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'vue-sonner'
 
 const route = useRoute()
@@ -32,6 +33,7 @@ const newPkgRemark = ref('')
 
 // 删除确认
 const showDeleteDialog = ref(false)
+const isForce = ref(false)
 const depToDelete = ref<Dependency | null>(null)
 
 const showLogDialog = ref(false)
@@ -116,17 +118,40 @@ async function installPackage() {
 
 function confirmDelete(dep: Dependency) {
   depToDelete.value = dep
+  isForce.value = false
   showDeleteDialog.value = true
 }
 
 async function uninstallPackage() {
   if (!depToDelete.value) return
+  const id = depToDelete.value.id
+  const name = depToDelete.value.name
+  const force = isForce.value
   try {
-    await api.deps.uninstall(depToDelete.value.id)
-    toast.success('卸载成功')
+    await api.deps.uninstall(id, force)
+    toast.success(force ? `"${name}" 记录已强制移除` : '卸载成功')
     await loadDeps()
-  } catch (e: unknown) {
-    toast.error((e as Error).message || '卸载失败')
+  } catch (e: any) {
+    const errorMsg = e.message || '卸载失败'
+    toast.error(errorMsg, {
+      duration: 10000,
+      action: {
+        label: '强制删除记录',
+        onClick: async () => {
+          try {
+            await api.deps.uninstall(id, true)
+            toast.success(`已强制删除 "${name}" 记录`)
+            await loadDeps()
+          } catch (err: any) {
+            toast.error('强制删除失败: ' + err.message)
+          }
+        }
+      },
+      actionButtonStyle: {
+        backgroundColor: '#ef4444', // text-red-500 equivalent for background
+        color: 'white'
+      }
+    })
   } finally {
     showDeleteDialog.value = false
     depToDelete.value = null
@@ -348,11 +373,19 @@ onMounted(async () => {
               确定要卸载 "{{ depToDelete?.name }}" 吗？
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction class="bg-destructive text-white hover:bg-destructive/90" @click="uninstallPackage">
-              卸载
-            </AlertDialogAction>
+          <AlertDialogFooter class="flex-col sm:flex-row gap-3">
+            <div class="flex items-center gap-2 mr-auto mb-2 sm:mb-0">
+              <Checkbox id="force" v-model:checked="isForce" />
+              <Label for="force" class="text-sm font-medium text-red-500 cursor-pointer select-none">
+                强制删除 (卸载失败时仍移除记录)
+              </Label>
+            </div>
+            <div class="flex justify-end gap-2">
+              <AlertDialogCancel>取消</AlertDialogCancel>
+              <AlertDialogAction class="bg-destructive text-white hover:bg-destructive/90" @click="uninstallPackage">
+                {{ isForce ? '强制删除' : '卸载' }}
+              </AlertDialogAction>
+            </div>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

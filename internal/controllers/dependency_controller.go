@@ -188,6 +188,8 @@ func (c *DependencyController) Uninstall(ctx *gin.Context) {
 		return
 	}
 
+	force := ctx.Query("force") == "true"
+
 	// 获取依赖信息
 	deps, _ := c.service.List("", "")
 	var dep *models.Dependency
@@ -204,11 +206,13 @@ func (c *DependencyController) Uninstall(ctx *gin.Context) {
 	}
 
 	if err := c.service.Uninstall(dep); err != nil {
-		utils.ServerError(ctx, err.Error())
-		return
+		if !force {
+			utils.ServerError(ctx, err.Error())
+			return
+		}
 	}
 
-	// 卸载成功后从数据库删除
+	// 卸载成功（或强制删除）后从数据库删除
 	c.service.Delete(id)
 
 	utils.SuccessMsg(ctx, "卸载成功")
