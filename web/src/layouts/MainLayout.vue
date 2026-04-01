@@ -111,7 +111,10 @@ onMounted(() => {
     <!-- Application Card: The main floating surface -->
     <div :style="mobileMenuOpen ? 'transform: scale(0.98); opacity: 0.9;' : ''"
       class="flex h-full w-full bg-background relative transition-all duration-500 overflow-hidden
-             2xl:max-w-[1800px] 2xl:max-h-[92vh] 2xl:rounded-[2.5rem] 2xl:shadow-[0_40px_100px_-20px_rgba(0,0,0,0.12)] 2xl:border 2xl:border-slate-200/60 dark:2xl:border-slate-800/40
+             2xl:max-w-[1800px] 2xl:max-h-[92vh] 2xl:rounded-[2.5rem] 
+             2xl:shadow-[0_50px_100px_-20px_rgba(0,0,0,0.25),0_0_0_1px_rgba(255,255,255,0.05)]
+             2xl:ring-1 2xl:ring-slate-900/5 dark:2xl:ring-white/10
+             2xl:border 2xl:border-slate-200/60 dark:2xl:border-white/5
              3xl:max-w-[2200px] 3xl:max-h-[90vh]">
       
       <!-- Mobile Menu Overlay -->
@@ -138,11 +141,12 @@ onMounted(() => {
             </Button>
           </RouterLink>
         </nav>
-        <div class="px-3 py-4 border-t flex justify-center">
-          <Button variant="ghost" class="justify-center gap-3 h-9 px-3 w-content min-w-[120px] text-muted-foreground hover:text-foreground line-clamp-1"
+        <div class="px-3 py-4 2xl:pb-12 border-t flex justify-center">
+          <Button variant="ghost" 
+            class="justify-start 2xl:justify-center gap-3 h-9 px-3 w-content 2xl:w-full 2xl:max-w-[140px] text-muted-foreground hover:text-foreground transition-all whitespace-nowrap"
             @click="logout">
-            <LogOut class="h-4 w-4" />
-            退出登录
+            <LogOut class="h-4 w-4 shrink-0" />
+            <span class="truncate">退出登录</span>
           </Button>
         </div>
       </aside>
@@ -152,8 +156,8 @@ onMounted(() => {
         <!-- Top Navigation Bar -->
         <header class="h-14 border-b bg-background flex items-center justify-between px-4 lg:px-6 shrink-0 sticky top-0 z-30 shadow-sm">
           <div class="flex items-center gap-3 flex-1 min-w-0">
-            <Button variant="ghost" size="icon" class="h-8 w-8 lg:hidden shrink-0 border" @click="mobileMenuOpen = true">
-              <Menu class="h-5 w-5" />
+            <Button variant="ghost" size="icon" class="h-9 w-9 lg:hidden shrink-0" @click="mobileMenuOpen = true">
+              <Menu class="h-5 w-5 text-muted-foreground" />
             </Button>
             <span class="text-sm text-muted-foreground truncate" :title="sentence">
               <span class="hidden sm:inline">{{ sentence }}</span>
