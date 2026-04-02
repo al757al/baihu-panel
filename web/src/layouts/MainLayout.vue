@@ -134,7 +134,7 @@ onMounted(() => {
         <nav class="flex-1 px-3 py-6 space-y-1 flex flex-col items-center overflow-y-auto">
           <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" custom v-slot="{ navigate }">
             <Button variant="ghost"
-              :class="['justify-center gap-3 h-9 px-3 w-full max-w-[140px]', isItemActive(item) && 'bg-slate-100 dark:bg-accent text-foreground dark:text-accent-foreground font-semibold shadow-sm']"
+              :class="['justify-center gap-3 h-9 px-3 w-full max-w-[140px]', isItemActive(item) && 'bg-zinc-100 dark:bg-accent text-foreground dark:text-accent-foreground font-semibold shadow-sm']"
               @click="handleNavClick(navigate)">
               <component :is="item.icon" class="h-4 w-4" />
               {{ item.label }}
