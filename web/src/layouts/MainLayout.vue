@@ -160,7 +160,7 @@ onMounted(() => {
               <Menu class="h-5 w-5 text-muted-foreground" />
             </Button>
             <div class="flex flex-col sm:flex-row sm:items-baseline sm:gap-2 truncate">
-              <span class="text-sm text-muted-foreground truncate font-medium" :title="sentence">
+              <span class="text-sm text-muted-foreground truncate font-medium poem-sentence" :title="sentence">
                 <span class="hidden sm:inline">{{ sentence }}</span>
                 <span class="sm:hidden">{{ sentenceContent }}</span>
               </span>
@@ -200,5 +200,17 @@ onMounted(() => {
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.1);
+}
+
+.poem-sentence {
+  transition: opacity 0.3s ease;
+}
+
+@media (max-width: 639px) {
+  .poem-sentence {
+    font-weight: 400 !important;
+    opacity: 0.7 !important;
+    letter-spacing: 0.01em;
+  }
 }
 </style>

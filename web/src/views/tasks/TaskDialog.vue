@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import DirTreeSelect from '@/components/DirTreeSelect.vue'
-import { Plus, ChevronDown, X, Search, Check, ChevronsUpDown, AlertCircle, Terminal, Zap, Loader2 } from 'lucide-vue-next'
+import { Plus, ChevronDown, X, Search, Check, ChevronsUpDown, AlertCircle, Terminal, Zap, Loader2, Lock, Variable } from 'lucide-vue-next'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { api, type Task, type EnvVar, type Agent, type MiseLanguage } from '@/api'
 import { PATHS, TRIGGER_TYPE } from '@/constants'
@@ -570,8 +571,53 @@ async function save() {
                 <div v-if="!allEnvsEnabled" class="grid grid-cols-1 sm:grid-cols-4 items-start gap-3">
                   <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold pt-2.5">按需包含</Label>
                   <div class="sm:col-span-3 space-y-2">
-                    <Popover><PopoverTrigger as-child><Button variant="outline" class="w-full justify-between h-9 bg-muted/10 border-muted-foreground/15 text-xs rounded-xl"><span class="text-muted-foreground">选择关联的环境变量...</span><ChevronDown class="h-4 w-4 opacity-30" /></Button></PopoverTrigger>
-                      <PopoverContent class="p-0 w-[400px]" align="start"><ScrollArea class="h-64 p-2"><div v-for="env in filteredEnvVars" :key="env.id" @click.stop="addEnv(env.id)" class="p-3 rounded-lg hover:bg-primary/5 cursor-pointer text-sm font-mono font-bold">{{ env.name }}</div></ScrollArea></PopoverContent>
+                    <Popover>
+                      <PopoverTrigger as-child>
+                        <Button variant="outline" class="w-full justify-between h-9 bg-muted/10 border-muted-foreground/15 text-xs rounded-xl">
+                          <span class="text-muted-foreground">选择关联的环境变量...</span>
+                          <ChevronDown class="h-4 w-4 opacity-30" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent class="p-0 w-[calc(100vw-32px)] sm:w-[480px] md:w-[540px] max-h-[480px] overflow-hidden rounded-2xl shadow-2xl border-primary/10 transition-all duration-300" 
+                        align="center" :align-offset="0" :side-offset="12">
+                        <div class="px-4 py-3.5 border-b bg-muted/20 backdrop-blur-md sticky top-0 z-10">
+                          <div class="relative group">
+                            <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground group-focus-within:text-primary transition-colors duration-300" />
+                            <Input v-model="envSearchQuery" placeholder="输入关键字搜索变量名或备注..." 
+                              class="pl-9 h-9 bg-background/50 border-primary/10 focus:border-primary/30 transition-all rounded-lg text-[13px]" />
+                          </div>
+                        </div>
+                        <ScrollArea class="h-[320px] px-2 py-1.5 overflow-x-hidden">
+                          <div v-if="filteredEnvVars.length === 0" class="py-16 text-center text-xs text-muted-foreground flex flex-col items-center gap-3 animate-in fade-in duration-500">
+                            <div class="h-10 w-10 rounded-full bg-muted/30 flex items-center justify-center mb-1">
+                               <Search class="h-5 w-5 opacity-20" />
+                            </div>
+                            未找到符合条件的变量
+                          </div>
+                          <div v-for="env in filteredEnvVars" :key="env.id" @click.stop="addEnv(env.id)"
+                            class="flex flex-col p-2.5 rounded-lg hover:bg-primary/5 cursor-pointer transition-all duration-300 border border-transparent hover:border-primary/10 mb-0.5 group relative">
+                            <div class="flex items-center justify-between mb-1">
+                              <div class="flex items-center gap-2 min-w-0">
+                                <component :is="env.type === 'secret' ? Lock : Variable" 
+                                  :class="cn('h-3.5 w-3.5 shrink-0', env.type === 'secret' ? 'text-amber-500' : 'text-blue-500/60')" />
+                                <code class="text-[11px] font-mono font-bold bg-muted/60 px-1.5 py-0.5 rounded text-foreground/80 group-hover:bg-primary/10 group-hover:text-primary transition-all truncate border border-transparent group-hover:border-primary/20">
+                                  {{ env.name }}
+                                </code>
+                                <Badge v-if="env.type === 'secret'" variant="outline" class="h-4 px-1.5 text-[9px] border-amber-500/20 bg-amber-500/5 text-amber-600 font-bold uppercase tracking-tight scale-90">
+                                  机密
+                                </Badge>
+                              </div>
+                              <div class="flex items-center gap-2 scale-75 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 translate-x-2 transition-all duration-300 shrink-0">
+                                <Plus class="h-4 w-4 text-primary" />
+                              </div>
+                            </div>
+                            <div class="text-[10px] text-muted-foreground/50 line-clamp-1 leading-relaxed group-hover:text-muted-foreground transition-colors ml-6 pl-1.5 border-l-2 border-transparent group-hover:border-primary/5 italic truncate">
+                              {{ env.remark || "暂无备注" }}
+                            </div>
+                            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-0 bg-primary/40 rounded-full group-hover:h-6 transition-all duration-300" />
+                          </div>
+                        </ScrollArea>
+                      </PopoverContent>
                     </Popover>
                     <div v-if="selectedEnvs.length > 0" class="flex flex-wrap gap-2 p-3 rounded-xl bg-muted/10 border border-muted-foreground/10 min-h-12"><div v-for="env in selectedEnvs" :key="env?.id" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background border border-muted-foreground/15 text-[11px] font-mono font-medium">{{ env?.name }}<X class="h-2.5 w-2.5 cursor-pointer" @click="removeEnv(env!.id)" /></div></div>
                   </div>
