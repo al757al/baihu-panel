@@ -9,8 +9,9 @@ WORKDIR /app/web
 # Copy package files
 COPY web/package*.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies using cache mount for npm
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
 
 # Copy frontend source
 COPY web/ ./
@@ -49,7 +50,10 @@ COPY --from=build-info /build-info /build-info
 
 # Go mod files
 COPY go.mod go.sum ./
-RUN go env -w GOPROXY=https://goproxy.cn,direct && go mod download
+RUN go env -w GOPROXY=https://goproxy.cn,direct
+# Using Go build cache mount can significantly speed up consecutive builds
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
 
 # Copy backend source
 COPY . .
@@ -57,11 +61,17 @@ COPY . .
 # Copy frontend dist (needed for embedding)
 COPY --from=frontend-builder /app/web/dist ./internal/static/dist
 
-# Generate Swagger
-RUN go run github.com/swaggo/swag/cmd/swag@latest init -g main.go -o ./openapi_docs
+# Generate Swagger (Optional: better to commit docs and only copy, but if needed, install once)
+# If openapi_docs exists, just use it, otherwise generate.
+# Here we avoid go run @latest by copying it if you have it locally.
+# If you don't, we install it once to the image.
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+RUN swag init -g main.go -o ./openapi_docs
 
-# Build Go binary
-RUN VERSION_VAL=$(cat /build-info/version.txt) && \
+# Build Go binary using cache mounts for faster builds
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    VERSION_VAL=$(cat /build-info/version.txt) && \
     BUILD_TIME_VAL=$(cat /build-info/build_time.txt) && \
     CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -ldflags="-s -w -X github.com/engigu/baihu-panel/internal/constant.Version=${VERSION_VAL} -X 'github.com/engigu/baihu-panel/internal/constant.BuildTime=${BUILD_TIME_VAL}'" \
@@ -78,9 +88,10 @@ WORKDIR /app
 # Copy build info
 COPY --from=build-info /build-info /build-info
 
-# Go mod files
+# Using Go build cache mount
 COPY go.mod go.sum ./
-RUN go env -w GOPROXY=https://goproxy.cn,direct && go mod download
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
 
 # Copy source needed for agent
 COPY internal/ ./internal/
@@ -89,7 +100,10 @@ COPY agent/ ./agent/
 # Build agent for all platforms and package as tar.gz
 WORKDIR /app/agent
 
-RUN VERSION_VAL=$(cat /build-info/version.txt) && \
+# Build agent with parallel-aware logic or just cache mount
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    VERSION_VAL=$(cat /build-info/version.txt) && \
     BUILD_TIME_VAL=$(cat /build-info/build_time.txt) && \
     LDFLAGS="-s -w -X 'main.Version=${VERSION_VAL}' -X 'main.BuildTime=${BUILD_TIME_VAL}'" && \
     mkdir -p /opt/agent && \

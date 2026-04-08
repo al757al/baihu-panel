@@ -437,7 +437,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col lg:flex-row h-[calc(100vh-100px)] gap-2">
+  <div class="flex-1 flex flex-col lg:flex-row h-0 lg:h-full gap-3 min-h-0 overflow-hidden">
     <FileSidebar
       :file-tree="fileTree"
       :expanded-dirs="expandedDirs"
@@ -445,17 +445,17 @@ onUnmounted(() => {
       :is-refreshing="isRefreshing"
       @refresh="loadTree"
       @select="handleSelect"
-      @delete="confirm => dialogsRef?.openDelete(confirm)"
-      @create="parent => dialogsRef?.openCreate(parent)"
+      @delete="(path: string) => dialogsRef?.openDelete(path)"
+      @create="(parent: string) => dialogsRef?.openCreate(parent)"
       @download="handleDownload"
       @move="handleMove"
-      @rename="path => dialogsRef?.openRename(path)"
+      @rename="(path: string) => dialogsRef?.openRename(path)"
       @duplicate="handleCopyFile"
       @upload-archive="handleArchiveUpload"
       @upload-files="handleFilesUpload"
     />
 
-    <div class="flex-1 min-h-[300px] border rounded-md flex flex-col overflow-hidden">
+    <div class="flex-1 min-w-0 min-h-[300px] border rounded-md flex flex-col overflow-hidden">
       <div class="flex items-center justify-between p-2 border-b gap-2">
         <span class="text-xs font-medium truncate flex-1 min-w-0">
           {{ selectedPath || '选择文件或文件夹进行操作' }}

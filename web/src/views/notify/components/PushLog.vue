@@ -129,9 +129,9 @@ const selectedLog = computed(() => logs.value.find((l: AppLog) => l.id === selec
 function getStatusBadgeClass(status: string) {
   switch (status) {
     case LOG_STATUS.SUCCESS:
-      return 'bg-green-500/10 text-green-700 border-green-200/50 dark:bg-green-500/20 dark:text-green-400 dark:border-green-900/50'
+      return 'bg-green-500/15 text-green-500 border-green-500/30'
     case LOG_STATUS.FAILED:
-      return 'bg-red-500/10 text-red-700 border-red-200/50 dark:bg-red-500/20 dark:text-red-400 dark:border-red-900/50'
+      return 'bg-red-500/15 text-red-500 border-red-500/30'
     default:
       return 'bg-secondary text-secondary-foreground border-transparent'
   }
@@ -165,16 +165,16 @@ function onDialogClose(open: boolean) {
 
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-between gap-2">
-      <div class="flex items-center gap-2">
-        <div class="relative flex-1 sm:flex-none">
-          <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input v-model="filters.keyword" placeholder="搜索标题或内容..." class="h-9 pl-9 w-full sm:w-56 text-sm"
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full">
+      <div class="flex items-center gap-2 w-full lg:w-auto lg:ml-auto">
+        <div class="relative w-full sm:w-60 group">
+          <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+          <Input v-model="filters.keyword" placeholder="搜索标题或内容..." class="h-9 pl-9 w-full text-sm bg-muted/20 border-muted-foreground/10 focus:bg-background"
             @input="handleSearch" />
         </div>
-        <div class="relative flex-1 sm:flex-none">
+        <div class="relative flex-1 sm:flex-none sm:w-28">
           <Select :model-value="filters.status" @update:model-value="handleStatusChange">
-            <SelectTrigger class="h-9 w-full sm:w-28 text-sm">
+            <SelectTrigger class="h-9 w-full text-sm bg-muted/20 border-muted-foreground/10">
               <SelectValue placeholder="状态" />
             </SelectTrigger>
             <SelectContent>
@@ -184,16 +184,16 @@ function onDialogClose(open: boolean) {
             </SelectContent>
           </Select>
         </div>
-        <Button variant="outline" size="icon" class="h-9 w-9 shrink-0" @click="fetchLogs" :disabled="loading"
+        <Button variant="outline" size="icon" class="h-9 w-9 shrink-0 sm:flex" @click="fetchLogs" :disabled="loading"
           title="刷新">
           <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
         </Button>
       </div>
       <AlertDialog :open="showClearConfirm" @update:open="showClearConfirm = $event">
         <Button variant="outline"
-          class="h-9 px-4 shrink-0 text-sm text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20"
+          class="h-9 px-4 shrink-0 text-sm text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 w-full sm:w-auto"
           @click="showClearConfirm = true">
-          <Trash2 class="h-4 w-4 sm:mr-2" /> <span class="hidden sm:inline" style="padding-left: 2px;">清空记录</span>
+          <Trash2 class="h-4 w-4 mr-2" /> <span>清空记录</span>
         </Button>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -212,38 +212,94 @@ function onDialogClose(open: boolean) {
       </AlertDialog>
     </div>
 
-    <div class="rounded-lg border bg-card overflow-x-auto">
-      <!-- 表头 -->
-      <div
-        class="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 border-b bg-muted/50 text-xs sm:text-sm text-muted-foreground font-medium sm:min-w-[700px]">
-        <span class="w-12 sm:w-16 shrink-0">序号</span>
-        <span class="w-40 sm:w-56 shrink-0">标题及渠道</span>
-        <span class="hidden sm:flex sm:flex-1">内容详情</span>
-        <span class="w-10 sm:w-16 shrink-0 text-center">状态</span>
-        <span class="shrink-0 w-24 sm:w-40 sm:text-right">发送时间</span>
+    <div class="rounded-lg border bg-card overflow-hidden">
+      <!-- ========== 1. 大屏表头 (Large >= 1024px) ========== -->
+      <div class="hidden lg:flex items-center gap-4 px-4 py-2 border-b bg-muted/20 text-sm text-muted-foreground font-medium">
+        <span class="w-16 shrink-0 pl-1">序号</span>
+        <span class="w-56 shrink-0 px-2 pl-6">标题及渠道</span>
+        <span class="flex-1 min-w-0 px-2 font-not-medium">内容详情</span>
+        <span class="w-40 shrink-0 text-right">发送时间</span>
       </div>
 
-      <!-- 列表 -->
-      <div class="divide-y sm:min-w-[700px]">
+      <!-- ========== 2. 中屏表头 (Medium 640px - 1024px) ========== -->
+      <div class="hidden sm:flex lg:hidden items-center gap-4 px-4 py-2 border-b bg-muted/20 text-sm text-muted-foreground font-medium">
+        <span class="w-48 shrink-0">项目</span>
+        <span class="flex-1 min-w-0">内容摘要</span>
+        <span class="w-40 shrink-0 text-right">时间信息</span>
+      </div>
+
+      <!-- 列表内容 -->
+      <div class="divide-y text-sm">
         <div v-if="logs.length === 0 && !loading" class="text-sm text-muted-foreground text-center py-8">
           暂无推送记录
         </div>
-        <div v-for="(log, index) in logs" :key="log.id"
-          class="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 hover:bg-muted/50 transition-colors cursor-pointer group"
+
+        <!-- ========== 1. 小屏布局 (Small < 640px) - 用户调好 ========== -->
+        <div v-for="(log, index) in logs" :key="`small-${log.id}`"
+          class="sm:hidden p-3 hover:bg-muted/50 transition-colors cursor-pointer group" @click="showDetail(log)"
+          :class="[selectedLogId === log.id && 'bg-accent/50']">
+          <div class="flex items-start justify-between mb-3 border-b border-border/40 pb-2">
+            <div class="flex items-center gap-2 flex-1 min-w-0 mr-2">
+              <span class="text-xs text-muted-foreground shrink-0">#{{ getLogIndex(index) }}</span>
+              <span class="font-bold text-sm truncate">{{ log.title }}</span>
+            </div>
+            <span
+              :class="['h-2 w-2 mt-1.5 rounded-full shrink-0', log.status === LOG_STATUS.SUCCESS ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]']"></span>
+          </div>
+
+          <!-- 详情信息列表 -->
+          <div class="space-y-1.5 text-xs text-muted-foreground mb-1 px-1">
+            <div v-if="log.channel_name" class="flex items-center gap-3">
+              <span class="w-8 shrink-0 font-medium opacity-70">渠道:</span>
+              <span class="text-foreground bg-muted/40 px-1.5 py-0.5 rounded text-[10px]">{{ log.channel_name }}</span>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="w-8 shrink-0 font-medium mt-0.5 opacity-70">内容:</span>
+              <div class="flex-1 min-w-0 text-foreground break-all leading-relaxed line-clamp-2">
+                {{ log.content || '-' }}
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="w-8 shrink-0 font-medium opacity-70">时间:</span>
+              <span class="text-[10px] text-muted-foreground">{{ formatDate(log.created_at) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== 2. 中屏布局 (Medium 640px - 1024px) - 新抽取优化 ========== -->
+        <div v-for="log in logs" :key="`medium-${log.id}`"
+          class="hidden sm:flex lg:hidden items-center gap-4 px-4 py-2.5 hover:bg-muted/50 transition-colors cursor-pointer group"
           :class="[selectedLogId === log.id && 'bg-accent/50']" @click="showDetail(log)">
-          <span class="w-12 sm:w-16 shrink-0 text-muted-foreground text-xs sm:text-sm">#{{ getLogIndex(index) }}</span>
-          <span class="w-40 sm:w-56 shrink-0 font-medium text-xs sm:text-sm truncate" :title="log.title">
-            <span v-if="log.channel_name" class="mr-1 text-muted-foreground">[{{ log.channel_name }}]</span>{{ log.title
-            }}
-          </span>
-          <span class="hidden sm:flex sm:flex-1 text-xs sm:text-sm text-muted-foreground truncate" :title="log.content">
+          <div class="w-48 shrink-0 flex items-center gap-3 min-w-0">
+            <span :class="['h-2 w-2 rounded-full shrink-0', log.status === LOG_STATUS.SUCCESS ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.3)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.3)]']"></span>
+            <div class="flex flex-col gap-0.5 min-w-0">
+              <span class="font-medium truncate text-sm" :title="log.title">{{ log.title }}</span>
+              <span v-if="log.channel_name" class="text-[10px] text-muted-foreground opacity-60">[{{ log.channel_name }}]</span>
+            </div>
+          </div>
+          <span class="flex-1 min-w-0 text-xs text-muted-foreground line-clamp-1" :title="log.content">
             {{ log.content || '-' }}
           </span>
-          <span class="w-10 sm:w-16 shrink-0 flex justify-center">
-            <span
-              :class="['h-2 w-2 rounded-full', log.status === LOG_STATUS.SUCCESS ? 'bg-green-500' : 'bg-red-500']"></span>
+          <span class="w-40 shrink-0 text-right text-xs text-muted-foreground tabular-nums opacity-60">
+            {{ formatDate(log.created_at) }}
           </span>
-          <span class="shrink-0 w-24 sm:w-40 sm:text-right text-xs text-muted-foreground">
+        </div>
+
+        <!-- ========== 3. 大屏布局 (Large >= 1024px) - 用户调好 ========== -->
+        <div v-for="(log, index) in logs" :key="`large-${log.id}`"
+          class="hidden lg:flex items-center gap-4 px-4 py-2 hover:bg-muted/50 transition-colors cursor-pointer group"
+          :class="[selectedLogId === log.id && 'bg-accent/50']" @click="showDetail(log)">
+          <span class="w-16 shrink-0 text-muted-foreground text-sm tabular-nums pl-1">#{{ getLogIndex(index) }}</span>
+          <div class="w-56 shrink-0 flex items-center gap-3 min-w-0 font-medium text-sm">
+            <span :class="['h-2 w-2 rounded-full shrink-0', log.status === LOG_STATUS.SUCCESS ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.3)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.3)]']"></span>
+            <span class="truncate" :title="log.title">
+              <span v-if="log.channel_name" class="mr-1 text-muted-foreground opacity-60">[{{ log.channel_name }}]</span>{{ log.title }}
+            </span>
+          </div>
+          <span class="flex-1 min-w-0 text-sm text-muted-foreground truncate" :title="log.content">
+            {{ log.content || '-' }}
+          </span>
+          <span class="w-40 shrink-0 text-right text-xs text-muted-foreground tabular-nums opacity-60">
             {{ formatDate(log.created_at) }}
           </span>
         </div>
@@ -259,10 +315,10 @@ function onDialogClose(open: boolean) {
           <div class="flex items-center justify-between pr-8">
             <DialogTitle>日志详情</DialogTitle>
             <Badge variant="outline" :class="[
-              'px-2 py-0.5 text-[10px] font-bold rounded-full border shadow-sm transition-all duration-300',
+              'px-2 py-0.5 text-[10px] font-bold rounded-md border shadow-sm transition-all duration-300',
               selectedLog ? getStatusBadgeClass(selectedLog.status) : ''
             ]">
-              <div class="flex items-center gap-1.5 uppercase tracking-wider">
+              <div class="flex items-center gap-1 uppercase tracking-tighter">
                 <Check v-if="selectedLog?.status === LOG_STATUS.SUCCESS" class="h-3 w-3" />
                 <X v-else class="h-3 w-3" />
                 <span>{{ selectedLog?.status === LOG_STATUS.SUCCESS ? 'Success' : 'Failed' }}</span>

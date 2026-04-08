@@ -13,7 +13,6 @@ export function decompressFromBase64(compressed: string): string {
     const decompressed = pako.inflate(bytes, { to: 'string' })
     return decompressed
   } catch (e) {
-    console.error('Decompress error:', e)
-    return '[解压失败]'
+    return compressed
   }
 }

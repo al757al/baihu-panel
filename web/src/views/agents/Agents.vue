@@ -29,9 +29,12 @@ const showEditDialog = ref(false)
 const showDeleteDialog = ref(false)
 const showDownloadDialog = ref(false)
 const showTokenDialog = ref(false)
+const showEditTokenDialog = ref(false)
 const showDetailDialog = ref(false)
 const formData = ref({ name: '', description: '' })
 const tokenForm = ref({ remark: '', max_uses: 0, expires_at: '' })
+const editingToken = ref<AgentToken | null>(null)
+const editTokenForm = ref({ remark: '', max_uses: 0, expires_at: '' })
 const editingAgent = ref<Agent | null>(null)
 const deletingAgent = ref<Agent | null>(null)
 const viewingAgent = ref<Agent | null>(null)
@@ -71,11 +74,13 @@ async function loadAgents() {
 }
 
 function viewDetail(agent: Agent) {
+  ;(document.activeElement as HTMLElement)?.blur()
   viewingAgent.value = agent
   showDetailDialog.value = true
 }
 
 function openEditDialog(agent: Agent) {
+  ;(document.activeElement as HTMLElement)?.blur()
   editingAgent.value = agent
   formData.value = { name: agent.name, description: agent.description }
   showEditDialog.value = true
@@ -105,8 +110,19 @@ async function toggleEnabled(agent: Agent) {
 }
 
 function confirmDelete(agent: Agent) {
+  ;(document.activeElement as HTMLElement)?.blur()
   deletingAgent.value = agent
   showDeleteDialog.value = true
+}
+
+function openDownloadDialog() {
+  ;(document.activeElement as HTMLElement)?.blur()
+  showDownloadDialog.value = true
+}
+
+function openTokenDialog() {
+  ;(document.activeElement as HTMLElement)?.blur()
+  showTokenDialog.value = true
 }
 
 async function deleteAgent() {
@@ -170,6 +186,35 @@ async function deleteToken(id: string) {
   }
 }
 
+function openEditToken(token: AgentToken) {
+  ;(document.activeElement as HTMLElement)?.blur()
+  editingToken.value = token
+  // expires_at 后端格式 "2006-01-02 15:04:05"，转回 datetime-local 格式
+  const rawExpires = token.expires_at?.replace(' ', 'T').slice(0, 16) || ''
+  editTokenForm.value = { remark: token.remark || '', max_uses: token.max_uses, expires_at: rawExpires }
+  showEditTokenDialog.value = true
+}
+
+async function updateToken() {
+  if (!editingToken.value) return
+  try {
+    let expiresAt = editTokenForm.value.expires_at
+    if (expiresAt) {
+      expiresAt = expiresAt.replace('T', ' ') + ':00'
+    }
+    await api.agents.updateToken(editingToken.value.id, {
+      remark: editTokenForm.value.remark,
+      max_uses: editTokenForm.value.max_uses,
+      expires_at: expiresAt || undefined
+    })
+    showEditTokenDialog.value = false
+    await loadAgents()
+    toast.success('更新成功')
+  } catch (e: unknown) {
+    toast.error((e as Error).message || '更新失败')
+  }
+}
+
 function isTokenExpired(token: AgentToken) {
   if (!token.expires_at) return false
   // 将 "YYYY-MM-DD HH:mm:ss" 转换为 ISO 格式 "YYYY-MM-DDTHH:mm:ss" 以提高浏览器兼容性
@@ -203,33 +248,35 @@ onUnmounted(() => {
 
 
 <template>
-  <div class="space-y-4">
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div>
-        <h2 class="text-xl sm:text-2xl font-bold tracking-tight">Agent 管理</h2>
-        <p class="text-muted-foreground text-sm">管理远程执行代理</p>
-      </div>
-      <div class="flex items-center gap-2 w-full md:w-auto">
-        <div class="relative flex-1 sm:flex-none">
-          <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input v-model="searchQuery" placeholder="搜索..." class="h-9 pl-8 w-full sm:w-40 md:w-48 text-sm" />
-        </div>
-        <Button variant="outline" size="sm" class="h-9 shrink-0" @click="showDownloadDialog = true">
-          <Download class="h-4 w-4 sm:mr-1.5" /> <span class="hidden sm:inline">下载</span>
-        </Button>
-        <Button variant="outline" size="icon" class="h-9 w-9 shrink-0" @click="loadAgents" :disabled="loading">
-          <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
-        </Button>
-      </div>
-    </div>
-
+  <div class="space-y-6">
     <Tabs v-model="activeTab">
-      <TabsList>
-        <TabsTrigger value="agents">Agent 列表</TabsTrigger>
-        <TabsTrigger value="regcodes">
-          <Ticket class="h-4 w-4 mr-1" />令牌
-        </TabsTrigger>
-      </TabsList>
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold tracking-tight">Agent 管理</h2>
+          <p class="text-muted-foreground text-sm">管理远程执行代理</p>
+        </div>
+        <div class="flex flex-col sm:flex-row items-center sm:justify-end gap-3 w-full md:w-auto">
+          <div class="flex w-full sm:w-auto items-center gap-2">
+            <div class="relative flex-1 sm:flex-none">
+              <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input v-model="searchQuery" placeholder="搜索..." class="h-9 pl-9 w-full sm:w-40 md:w-48 text-sm" />
+            </div>
+            <Button variant="outline" size="sm" class="h-9 shrink-0" @click="openDownloadDialog">
+              <Download class="h-4 w-4 sm:mr-1.5" /> <span class="hidden sm:inline">下载</span>
+            </Button>
+            <Button variant="outline" size="icon" class="h-9 w-9 shrink-0" @click="loadAgents" :disabled="loading">
+              <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
+            </Button>
+          </div>
+          <TabsList class="grid w-full grid-cols-2 sm:w-[180px] h-9 shrink-0">
+            <TabsTrigger value="agents" class="text-sm">Agent 列表</TabsTrigger>
+            <TabsTrigger value="regcodes" class="text-sm">
+              <Ticket class="h-3.5 w-3.5 mr-1" />
+              <span>令牌</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
+      </div>
 
       <TabsContent value="agents" class="mt-4">
         <div class="rounded-lg border bg-card overflow-x-auto">
@@ -380,28 +427,29 @@ onUnmounted(() => {
       </TabsContent>
 
       <TabsContent value="regcodes" class="mt-4">
-        <div class="rounded-lg border bg-card overflow-x-auto hide-scrollbar">
-          <div class="min-w-full w-max">
-            <div
-              class="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 border-b bg-muted/50 text-xs sm:text-sm text-muted-foreground font-medium">
-            <span class="w-6 shrink-0"></span>
-            <span class="flex-1 min-w-[200px]">令牌</span>
-            <span class="w-24 sm:w-32 shrink-0">备注</span>
-            <span class="w-16 sm:w-20 shrink-0 text-center">使用次数</span>
-            <span class="w-28 sm:w-36 shrink-0 hidden sm:block">过期时间</span>
-            <span class="w-20 shrink-0 flex justify-center">
-              <Button size="sm" class="h-7" @click="showTokenDialog = true">
-                <Plus class="h-3.5 w-3.5 mr-1" />生成
+        <div class="rounded-lg border bg-card">
+          <!-- 表头 -->
+          <div class="flex items-center gap-2 px-3 py-2 border-b bg-muted/50 text-xs text-muted-foreground font-medium">
+            <span class="w-5 shrink-0"></span>
+            <span class="flex-1 min-w-0">令牌</span>
+            <span class="w-20 shrink-0 hidden sm:block">备注</span>
+            <span class="w-14 shrink-0 text-center hidden sm:block">次数</span>
+            <span class="w-28 shrink-0 hidden md:block">过期时间</span>
+            <span class="w-16 shrink-0 flex justify-end">
+              <Button size="sm" class="h-7 px-2" @click="openTokenDialog">
+                <Plus class="h-3.5 w-3.5 sm:mr-1" /><span class="hidden sm:inline">生成</span>
               </Button>
             </span>
           </div>
+          <!-- 数据行 -->
           <div class="divide-y">
             <div v-if="tokens.length === 0" class="text-center py-8 text-muted-foreground">
               <Ticket class="h-8 w-8 mx-auto mb-2 opacity-50" />暂无令牌
             </div>
             <div v-for="token in tokens" :key="token.id"
-              class="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 hover:bg-muted/50 transition-colors">
-              <span class="w-6 shrink-0 flex justify-center">
+              class="flex items-center gap-2 px-3 py-2 hover:bg-muted/50 transition-colors">
+              <!-- 状态 -->
+              <span class="w-5 shrink-0 flex justify-center">
                 <div v-if="!isTokenExpired(token) && !isTokenExhausted(token)"
                   class="h-5 w-5 rounded-full bg-green-500/10 flex items-center justify-center">
                   <Check class="h-3 w-3 text-green-500 stroke-[3]" />
@@ -410,27 +458,32 @@ onUnmounted(() => {
                   <X class="h-3 w-3 text-red-500 stroke-[3]" />
                 </div>
               </span>
+              <!-- Token（截断省略号，撑满剩余空间） -->
               <code
-                class="flex-1 min-w-[200px] font-mono text-xs bg-muted px-2 py-0.5 rounded truncate">{{ token.token }}</code>
-              <span class="w-24 sm:w-32 shrink-0 text-xs sm:text-sm text-muted-foreground truncate">{{ token.remark ||
-                '-' }}</span>
-              <span class="w-16 sm:w-20 shrink-0 text-xs sm:text-sm text-muted-foreground text-center">
+                class="flex-1 min-w-0 font-mono text-xs bg-muted px-2 py-0.5 rounded truncate">{{ token.token }}</code>
+              <!-- 备注（小屏隐藏） -->
+              <span class="w-20 shrink-0 text-xs text-muted-foreground truncate hidden sm:block">{{ token.remark || '-' }}</span>
+              <!-- 使用次数（小屏隐藏） -->
+              <span class="w-14 shrink-0 text-xs text-muted-foreground text-center hidden sm:block">
                 {{ token.used_count }}/{{ token.max_uses === 0 ? '∞' : token.max_uses }}
               </span>
-              <span class="w-28 sm:w-36 shrink-0 text-xs sm:text-sm text-muted-foreground hidden sm:block truncate">
+              <!-- 过期时间（md 以上才显示） -->
+              <span class="w-28 shrink-0 text-xs text-muted-foreground truncate hidden md:block">
                 {{ token.expires_at || '永不过期' }}
               </span>
-              <span class="w-20 shrink-0 flex justify-center gap-1">
+              <!-- 操作 -->
+              <span class="w-24 shrink-0 flex justify-end gap-1">
                 <Button variant="ghost" size="icon" class="h-7 w-7" @click="copyToken(token.token)" title="复制">
                   <Copy class="h-3.5 w-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" class="h-7 w-7 text-destructive" @click="deleteToken(token.id)"
-                  title="删除">
+                <Button variant="ghost" size="icon" class="h-7 w-7" @click="openEditToken(token)" title="编辑">
+                  <Edit class="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" class="h-7 w-7 text-destructive" @click="deleteToken(token.id)" title="删除">
                   <Trash2 class="h-3.5 w-3.5" />
                 </Button>
               </span>
             </div>
-          </div>
           </div>
         </div>
       </TabsContent>
@@ -626,6 +679,34 @@ onUnmounted(() => {
         <DialogFooter>
           <Button variant="outline" @click="showTokenDialog = false">取消</Button>
           <Button @click="createToken">生成</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- 编辑令牌对话框 -->
+    <Dialog v-model:open="showEditTokenDialog">
+      <DialogContent @openAutoFocus.prevent>
+        <DialogHeader>
+          <DialogTitle>编辑令牌</DialogTitle>
+          <DialogDescription class="sr-only">修改令牌的备注、使用次数和过期时间</DialogDescription>
+        </DialogHeader>
+        <div class="space-y-4">
+          <div>
+            <Label>备注</Label>
+            <Input v-model="editTokenForm.remark" placeholder="备注信息（可选）" />
+          </div>
+          <div>
+            <Label>最大使用次数</Label>
+            <Input v-model.number="editTokenForm.max_uses" type="number" placeholder="0 表示无限制" />
+          </div>
+          <div>
+            <Label>过期时间</Label>
+            <Input v-model="editTokenForm.expires_at" type="datetime-local" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" @click="showEditTokenDialog = false">取消</Button>
+          <Button @click="updateToken">保存</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

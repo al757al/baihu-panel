@@ -259,7 +259,6 @@ func (h *ServerSchedulerHandler) OnTaskCompleted(req *executor.ExecutionRequest,
 	// 后置：检查引发 Workflow 的下游节点并发起
 	h.es.TriggerWorkflowNextTasks(taskLog, req.Envs)
 
-
 	// 更新内存缓冲
 	h.es.UpdateResult(*result)
 
@@ -380,14 +379,14 @@ func (es *ExecutorService) HandleTaskRetry(task *models.Task, req *executor.Exec
 	if task == nil {
 		return
 	}
-	
+
 	if !isSuccess || status == constant.TaskStatusFailed || status == constant.TaskStatusTimeout || exitCode != 0 {
 		retryIndex := req.Metadata.RetryIndex
 
 		if retryIndex < task.RetryCount {
 			retryIndex++
 			logger.Infof("[Executor] 任务 #%s 执行失败/出错，将在 %d 秒后进行第 %d/%d 次重试...", task.ID, task.RetryInterval, retryIndex, task.RetryCount)
-			
+
 			es.scheduler.EnqueueDelayed(time.Duration(task.RetryInterval)*time.Second, func() *executor.ExecutionRequest {
 				latestTask := es.taskService.GetTaskByID(task.ID)
 				if latestTask == nil || !latestTask.Enabled {
@@ -445,7 +444,7 @@ func (h *LocalTaskHooks) OnHeartbeat(ctx context.Context, logID string, duration
 // ExecuteDispatcher 实现任务分发逻辑
 func (es *ExecutorService) ExecuteDispatcher(ctx context.Context, req *executor.ExecutionRequest, stdout, stderr io.Writer) (*executor.Result, error) {
 	taskID := req.TaskID
-	
+
 	// 解析路径变量 (如 $SCRIPTS_DIR$)
 	req.Command = es.ResolvePath(req.Command)
 	req.WorkDir = es.ResolvePath(req.WorkDir)
@@ -788,8 +787,8 @@ func (es *ExecutorService) CheckConcurrency(taskID string) error {
 	if string(task.RunningGo) != "" {
 		_ = json.Unmarshal([]byte(string(task.RunningGo)), &goids)
 	}
- 
- 	var config models.TaskConfig
+
+	var config models.TaskConfig
 	if string(task.Config) != "" {
 		_ = json.Unmarshal([]byte(string(task.Config)), &config)
 	}
@@ -1008,7 +1007,7 @@ func (es *ExecutorService) BuildRepoCommand(task *models.Task) (string, string) 
 	if config.Extensions != "" {
 		args = append(args, "--extensions", config.Extensions)
 	}
-	
+
 	// 传递任务 ID，以便 reposync 内部直接处理脚本注册并输出日志
 	args = append(args, "--task-id", task.ID)
 	args = append(args, "--task-timeout", fmt.Sprintf("%d", task.Timeout))
@@ -1023,7 +1022,7 @@ func (es *ExecutorService) BuildRepoCommand(task *models.Task) (string, string) 
 	}
 
 	cmdStr := utils.QuotePath(exePath) + " " + strings.Join(quotedArgs, " ")
-	return buildRepoCommandEnvPrefix()+cmdStr, filepath.Dir(exePath)
+	return buildRepoCommandEnvPrefix() + cmdStr, filepath.Dir(exePath)
 }
 
 // loadEnvVars 加载环境变量和掩码信息，支持全局注入及重名合并
@@ -1095,40 +1094,9 @@ func (es *ExecutorService) ResolvePath(path string) string {
 }
 
 func buildRepoCommandEnvPrefix() string {
-	absConfig, err := filepath.Abs(constant.ConfigPath)
-	if err != nil {
-		absConfig = constant.ConfigPath
-	}
-
-	absScriptsDir := resolveAbsScriptsDir()
-	return "BH_CONFIG_PATH='" + strings.ReplaceAll(absConfig, "'", "'\\''") + "' BH_SCRIPTS_DIR='" + strings.ReplaceAll(absScriptsDir, "'", "'\\''") + "' "
+	return utils.BuildShellEnvPrefix(utils.BuildRuntimeProcessEnv())
 }
 
 func resolveAbsScriptsDir() string {
-	if scriptsDir := os.Getenv("BH_SCRIPTS_DIR"); scriptsDir != "" {
-		if filepath.IsAbs(scriptsDir) {
-			return filepath.Clean(scriptsDir)
-		}
-		if absScriptsDir, err := filepath.Abs(scriptsDir); err == nil {
-			return absScriptsDir
-		}
-		return filepath.Clean(scriptsDir)
-	}
-
-	if configPath := os.Getenv("BH_CONFIG_PATH"); configPath != "" {
-		if !filepath.IsAbs(configPath) {
-			if absConfigPath, err := filepath.Abs(configPath); err == nil {
-				configPath = absConfigPath
-			}
-		}
-
-		projectRoot := filepath.Dir(filepath.Dir(configPath))
-		return filepath.Clean(filepath.Join(projectRoot, constant.ScriptsWorkDir))
-	}
-
-	if absScriptsDir, err := filepath.Abs(constant.ScriptsWorkDir); err == nil {
-		return absScriptsDir
-	}
-
-	return filepath.Clean(constant.ScriptsWorkDir)
+	return utils.ResolveAbsScriptsDir()
 }

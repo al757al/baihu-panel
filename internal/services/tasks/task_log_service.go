@@ -51,6 +51,10 @@ func (s *TaskLogService) CreateEmptyLog(taskID string, command string, wfID *str
 	if err := database.DB.Create(taskLog).Error; err != nil {
 		return nil, err
 	}
+
+	// 任务开始时即更新任务的 last_run 为启动时间
+	database.DB.Model(&models.Task{}).Where("id = ?", taskID).Update("last_run", startTime)
+
 	return taskLog, nil
 }
 
@@ -72,7 +76,12 @@ func (s *TaskLogService) SaveTaskLog(taskLog *models.TaskLog) error {
 	}
 
 	// 更新任务的 last_run
-	database.DB.Model(&models.Task{}).Where("id = ?", taskLog.TaskID).Update("last_run", models.Now())
+	// 更新任务的 last_run，优先使用日志记录的启动时间
+	lastRun := models.Now()
+	if taskLog.StartTime != nil {
+		lastRun = *taskLog.StartTime
+	}
+	database.DB.Model(&models.Task{}).Where("id = ?", taskLog.TaskID).Update("last_run", lastRun)
 
 	return nil
 }

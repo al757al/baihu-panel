@@ -22,7 +22,7 @@ func (ts *TaskService) GetTaskBySourceID(sourceID string) *models.Task {
 	return &task
 }
 
-func (ts *TaskService) CreateTask(name, command, schedule string, timeout int, workDir, cleanConfig, envs, taskType, config string, agentID *string, languages models.TaskLanguages, triggerType string, tags string, retryCount int, retryInterval int, randomRange int, sourceID string) *models.Task {
+func (ts *TaskService) CreateTask(name, remark, command, schedule string, timeout int, workDir, cleanConfig, envs, taskType, config string, agentID *string, languages models.TaskLanguages, triggerType string, tags string, retryCount int, retryInterval int, randomRange int, sourceID string) *models.Task {
 	if taskType == "" {
 		taskType = "task"
 	}
@@ -32,6 +32,7 @@ func (ts *TaskService) CreateTask(name, command, schedule string, timeout int, w
 	task := &models.Task{
 		ID:            utils.GenerateID(),
 		Name:          name,
+		Remark:        remark,
 		Command:       models.BigText(command),
 		Tags:          tags,
 		Type:          taskType,
@@ -72,7 +73,7 @@ func (ts *TaskService) GetTasksWithPagination(page, pageSize int, name string, a
 
 	query := database.DB.Model(&models.Task{})
 	if name != "" {
-		query = query.Where("name LIKE ?", "%"+name+"%")
+		query = query.Where("name LIKE ? OR remark LIKE ?", "%"+name+"%", "%"+name+"%")
 	}
 	if tags != "" {
 		query = query.Where("tags LIKE ?", "%"+tags+"%")
@@ -99,13 +100,14 @@ func (ts *TaskService) GetTaskByID(id string) *models.Task {
 	return &task
 }
 
-func (ts *TaskService) UpdateTask(id string, name, command, schedule string, timeout int, workDir, cleanConfig, envs string, enabled bool, taskType, config string, agentID *string, languages models.TaskLanguages, triggerType string, tags string, retryCount int, retryInterval int, randomRange int, sourceID string) *models.Task {
+func (ts *TaskService) UpdateTask(id string, name, remark, command, schedule string, timeout int, workDir, cleanConfig, envs string, enabled bool, taskType, config string, agentID *string, languages models.TaskLanguages, triggerType string, tags string, retryCount int, retryInterval int, randomRange int, sourceID string) *models.Task {
 	var task models.Task
 	res := database.DB.Where("id = ?", id).Limit(1).Find(&task)
 	if res.Error != nil || res.RowsAffected == 0 {
 		return nil
 	}
 	task.Name = name
+	task.Remark = remark
 	task.Command = models.BigText(command)
 	task.Tags = tags
 	task.Schedule = schedule
@@ -131,7 +133,7 @@ func (ts *TaskService) UpdateTask(id string, name, command, schedule string, tim
 	}
 
 	database.DB.Model(&task).Select(
-		"Name", "Command", "Tags", "Schedule", "Timeout", "WorkDir",
+		"Name", "Remark", "Command", "Tags", "Schedule", "Timeout", "WorkDir",
 		"CleanConfig", "Envs", "Enabled", "AgentID", "Languages",
 		"RetryCount", "RetryInterval", "RandomRange", "Type",
 		"TriggerType", "Config", "SourceID",

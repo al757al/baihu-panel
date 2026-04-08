@@ -58,7 +58,7 @@ func (es *EnvService) GetEnvVarsWithPagination(userID string, name string, envTy
 
 	query := database.DB.Model(&models.EnvironmentVariable{}).Where("user_id = ?", userID)
 	if name != "" {
-		query = query.Where("name LIKE ?", "%"+name+"%")
+		query = query.Where("name LIKE ? OR remark LIKE ?", "%"+name+"%", "%"+name+"%")
 	}
 	if envType != "" {
 		query = query.Where("type = ?", envType)

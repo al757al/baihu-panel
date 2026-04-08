@@ -167,6 +167,9 @@ export const api = {
     getAbout: () => request<AboutInfo>('/settings/about'),
     getChangelog: () => request<string>('/settings/changelog'),
     get: (section: string, key: string) => request<string>(`/settings/${section}/${key}`),
+    getSection: (section: string) => request<Record<string, string>>(`/settings/${section}`),
+    setSection: (section: string, values: Record<string, string>) =>
+      request(`/settings/${section}`, { method: 'PUT', body: JSON.stringify(values) }),
     generateToken: (section: string, key: string) =>
       request<string>(`/settings/${section}/${key}/generate`, { method: 'POST' }),
     getLoginLogs: (params?: { page?: number; page_size?: number; username?: string }) => {
@@ -258,7 +261,10 @@ export const api = {
     delete: (id: string) => request(`/deps/${id}`, { method: 'DELETE' }),
     install: (data: any) => request<any>('/deps/install', { method: 'POST', body: JSON.stringify(data) }),
     getInstallCmd: (data: any) => request<{ command: string }>('/deps/install-cmd', { method: 'POST', body: JSON.stringify(data) }),
-    uninstall: (id: string) => request<any>(`/deps/uninstall/${id}`, { method: 'POST' }),
+    uninstall: (id: string, force?: boolean) => {
+      const query = force ? '?force=true' : ''
+      return request<any>(`/deps/uninstall/${id}${query}`, { method: 'POST' })
+    },
     reinstall: (id: string) => request(`/deps/reinstall/${id}`, { method: 'POST' }),
     reinstallAll: (language: string, lang_version?: string) => {
       const query = new URLSearchParams({ language })
@@ -288,7 +294,9 @@ export const api = {
     listTokens: () => request<AgentToken[]>('/agents/tokens'),
     createToken: (data: { remark?: string; max_uses?: number; expires_at?: string }) =>
       request<AgentToken>('/agents/tokens', { method: 'POST', body: JSON.stringify(data) }),
-    deleteToken: (id: string) => request('/agents/tokens/' + id, { method: 'DELETE' })
+    deleteToken: (id: string) => request('/agents/tokens/' + id, { method: 'DELETE' }),
+    updateToken: (id: string, data: { remark?: string; max_uses?: number; expires_at?: string }) =>
+      request<AgentToken>('/agents/tokens/' + id, { method: 'PUT', body: JSON.stringify(data) })
   },
   mise: {
     list: () => request<MiseLanguage[]>('/mise/ls'),
@@ -349,6 +357,7 @@ export interface FileNode {
 export interface Task {
   id: string
   name: string
+  remark: string
   command: string
   tags: string
   type: string

@@ -62,13 +62,11 @@ let logSocket: WebSocket | null = null
 import { decompressFromBase64 } from '@/utils/decompress'
 
 const decompressedOutput = computed(() => {
-  if (!wsContent.value) return '无输出'
-  // 检查是否是 base64 (尝试性，如果开头是 eJ 且长度较大，很可能是压缩后的)
-  if (wsContent.value.length > 20 && wsContent.value.startsWith('eJ')) {
-    return decompressFromBase64(wsContent.value)
-  }
-  return wsContent.value
+  if (!wsContent.value) return ''
+  const decoded = decompressFromBase64(wsContent.value)
+  return decoded
 })
+
 
 async function loadLogs() {
   isRefreshing.value = true
@@ -288,17 +286,17 @@ async function handleDeleteLog() {
 function getStatusBadgeClass(status: string) {
   switch (status) {
     case TASK_STATUS.SUCCESS:
-      return 'bg-green-500/10 text-green-700 border-green-200/50 dark:bg-green-500/20 dark:text-green-400 dark:border-green-900/50'
+      return 'bg-green-500/10 text-green-600 border-green-500/20 dark:bg-green-500/20 dark:text-green-400 dark:border-green-500/30 shadow-[0_0_8px_-2px_rgba(34,197,94,0.15)]'
     case TASK_STATUS.FAILED:
-      return 'bg-red-500/10 text-red-700 border-red-200/50 dark:bg-red-500/20 dark:text-red-400 dark:border-red-900/50'
+      return 'bg-red-500/10 text-red-600 border-red-500/20 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/30'
     case TASK_STATUS.RUNNING:
-      return 'bg-blue-500/10 text-blue-700 border-blue-200/50 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-900/50'
+      return 'bg-blue-500/10 text-blue-600 border-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30'
     case TASK_STATUS.PENDING:
-      return 'bg-amber-500/10 text-amber-700 border-amber-200/50 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-900/50'
+      return 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30'
     case TASK_STATUS.TIMEOUT:
-      return 'bg-orange-500/10 text-orange-700 border-orange-200/50 dark:bg-orange-500/20 dark:text-orange-400 dark:border-orange-900/50'
+      return 'bg-orange-500/10 text-orange-600 border-orange-500/20 dark:bg-orange-500/20 dark:text-orange-400 dark:border-orange-500/30'
     case TASK_STATUS.CANCELLED:
-      return 'bg-muted text-muted-foreground border-transparent'
+      return 'bg-muted/50 text-muted-foreground border-muted-foreground/10'
     default:
       return 'bg-secondary text-secondary-foreground border-transparent'
   }
@@ -376,10 +374,10 @@ watch(() => route.query, (newQuery) => {
         <div
           class="flex sm:hidden items-center gap-2 px-3 py-2 border-b bg-muted/20 text-xs text-muted-foreground font-medium">
           <span class="w-14 shrink-0">序号</span>
-          <span class="w-10 shrink-0 text-center">类型</span>
+          <span class="w-8 shrink-0 text-center">类型</span>
           <span class="flex-1 min-w-0">任务名称</span>
           <span class="w-8 shrink-0 text-center">状态</span>
-          <span class="w-12 text-right shrink-0">耗时</span>
+          <span class="w-16 text-right shrink-0">耗时</span>
           <span class="w-8 text-center shrink-0"></span>
         </div>
         <!-- 大屏表头 -->
@@ -407,7 +405,7 @@ watch(() => route.query, (newQuery) => {
             <div class="flex sm:hidden items-center gap-2 px-3 py-2">
               <span class="w-14 shrink-0 text-muted-foreground text-xs">#{{ total - (currentPage - 1) * pageSize - index
                 }}</span>
-              <span class="w-6 shrink-0 flex justify-center" :title="getTaskTypeTitle(log.task_type || 'task')">
+              <span class="w-8 shrink-0 flex justify-center" :title="getTaskTypeTitle(log.task_type || 'task')">
                 <GitBranch v-if="log.task_type === TASK_TYPE.REPO" class="h-3.5 w-3.5 text-primary" />
                 <Terminal v-else class="h-3.5 w-3.5 text-primary" />
               </span>
@@ -438,7 +436,7 @@ watch(() => route.query, (newQuery) => {
                   <Ban class="h-3 w-3 text-muted-foreground" />
                 </div>
               </span>
-              <span class="w-12 text-right shrink-0 text-muted-foreground text-xs">{{ formatDuration(log.duration)
+              <span class="w-16 text-right shrink-0 text-muted-foreground text-xs whitespace-nowrap">{{ formatDuration(log.duration)
                 }}</span>
               <span class="w-8 shrink-0 flex justify-center opacity-100">
                 <Button variant="ghost" size="icon"
@@ -510,7 +508,7 @@ watch(() => route.query, (newQuery) => {
         class="w-full lg:w-[480px] rounded-lg border bg-card flex flex-col overflow-hidden shrink-0">
         <div class="flex items-center justify-between px-4 h-11 border-b bg-muted/20">
           <div class="flex items-center gap-2">
-            <span class="text-sm font-medium text-muted-foreground">日志详情</span>
+            <span class="text-sm font-normal text-muted-foreground">日志详情</span>
             <Button v-if="selectedLog.status === TASK_STATUS.RUNNING" variant="destructive" size="sm"
               class="h-6 px-2 text-[10px]" :disabled="isStopping" @click="stopTask">
               {{ isStopping ? '停止中...' : '停止任务' }}
@@ -526,43 +524,43 @@ watch(() => route.query, (newQuery) => {
             </Button>
           </div>
         </div>
-        <div class="px-4 py-3 border-b space-y-2 text-sm">
+        <div class="px-4 py-3 border-b space-y-2 text-sm text-foreground/80">
           <div class="flex justify-between items-center h-6">
-            <span class="text-muted-foreground">任务名称</span>
-            <span class="font-medium">{{ selectedLog.task_name }}</span>
+            <span class="text-sm font-normal text-muted-foreground">任务名称</span>
+            <span class="text-sm font-normal text-muted-foreground">{{ selectedLog.task_name }}</span>
           </div>
           <div class="flex justify-between items-center h-8">
-            <span class="text-muted-foreground">状态</span>
+            <span class="text-sm font-normal text-muted-foreground">状态</span>
             <Badge variant="outline" :class="[
-              'capitalize px-3 py-1 font-semibold rounded-full border shadow-sm transition-all duration-300',
+              'capitalize px-3 py-1 font-normal rounded-full border shadow-sm transition-all duration-300 ring-4 ring-transparent hover:ring-primary/5',
               getStatusBadgeClass(selectedLog.status)
             ]">
               <div class="flex items-center gap-1.5">
-                <CheckCircle2 v-if="selectedLog.status === TASK_STATUS.SUCCESS" class="h-3.5 w-3.5" />
-                <XCircle v-else-if="selectedLog.status === TASK_STATUS.FAILED" class="h-3.5 w-3.5" />
+                <CheckCircle2 v-if="selectedLog.status === TASK_STATUS.SUCCESS" class="h-3.5 w-3.5 fill-green-500/20" />
+                <XCircle v-else-if="selectedLog.status === TASK_STATUS.FAILED" class="h-3.5 w-3.5 fill-red-500/20" />
                 <ZapIcon v-else-if="selectedLog.status === TASK_STATUS.RUNNING"
                   class="h-3.5 w-3.5 fill-current animate-pulse text-blue-500" />
-                <Clock v-else-if="selectedLog.status === TASK_STATUS.PENDING" class="h-3.5 w-3.5" />
-                <AlertCircle v-else-if="selectedLog.status === TASK_STATUS.TIMEOUT" class="h-3.5 w-3.5" />
+                <Clock v-else-if="selectedLog.status === TASK_STATUS.PENDING" class="h-3.5 w-3.5 fill-amber-500/20" />
+                <AlertCircle v-else-if="selectedLog.status === TASK_STATUS.TIMEOUT" class="h-3.5 w-3.5 fill-orange-500/20" />
                 <Ban v-else-if="selectedLog.status === TASK_STATUS.CANCELLED" class="h-3.5 w-3.5" />
-                <span class="text-xs tracking-wide uppercase">{{ selectedLog.status }}</span>
+                <span class="text-[10px] font-normal uppercase">{{ selectedLog.status === TASK_STATUS.SUCCESS ? 'SUCCESS' : selectedLog.status }}</span>
               </div>
             </Badge>
           </div>
           <div class="flex justify-between items-center h-6">
-            <span class="text-muted-foreground">耗时</span>
-            <span class="font-medium">{{ formatDuration(selectedLog.duration) }}</span>
+            <span class="text-sm font-normal text-muted-foreground">耗时</span>
+            <span class="text-sm font-normal text-muted-foreground">{{ formatDuration(selectedLog.duration) }}</span>
           </div>
           <div class="flex justify-between items-center h-6">
-            <span class="text-muted-foreground">开始时间</span>
-            <span class="font-mono text-xs">{{ selectedLog.start_time || '-' }}</span>
+            <span class="text-sm font-normal text-muted-foreground">开始时间</span>
+            <span class="text-sm font-normal text-muted-foreground">{{ selectedLog.start_time || '-' }}</span>
           </div>
           <div class="flex justify-between items-center h-6">
-            <span class="text-muted-foreground">结束时间</span>
-            <span class="font-mono text-xs">{{ selectedLog.end_time || '-' }}</span>
+            <span class="text-sm font-normal text-muted-foreground">结束时间</span>
+            <span class="text-sm font-normal text-muted-foreground">{{ selectedLog.end_time || '-' }}</span>
           </div>
           <div class="pt-1.5">
-            <span class="text-muted-foreground block mb-1">执行命令</span>
+            <span class="text-sm font-normal text-muted-foreground block mb-1">执行命令</span>
             <code
               class="block font-mono bg-muted/40 px-3 py-2 rounded text-xs break-all border border-muted-foreground/10">
               {{ selectedLog.command }}
@@ -573,21 +571,42 @@ watch(() => route.query, (newQuery) => {
           <div v-if="selectedLog.error" class="px-4 py-3 border-b bg-red-500/5 space-y-2 text-sm">
             <div class="flex items-center gap-2 text-red-500 font-medium">
               <X class="h-4 w-4" />
-              <span>系统错误</span>
+              <span class="font-normal">系统错误</span>
             </div>
             <code class="block font-mono bg-red-500/10 text-red-600 px-2 py-1 rounded text-xs break-all">
               {{ selectedLog.error }}
             </code>
           </div>
           <div class="px-4 py-2.5 text-sm text-muted-foreground border-b bg-muted/20 flex items-center justify-between">
-            <span class="font-medium">日志输出</span>
+            <span class="text-sm font-normal text-muted-foreground">日志输出</span>
             <Button variant="ghost" size="icon" class="h-6 w-6" @click="showFullscreen = true" title="全屏查看">
               <Maximize2 class="h-3.5 w-3.5" />
             </Button>
           </div>
-          <div class="flex-1 overflow-auto bg-black/5 dark:bg-white/5 min-h-[160px]">
-            <div class="p-4 text-xs font-mono whitespace-pre-wrap break-all log-pre leading-relaxed"><Ansi>{{ decompressedOutput }}</Ansi></div>
-            <div v-if="isWsLoading" class="p-4 text-sm text-muted-foreground italic">连接中...</div>
+          <div class="flex-1 overflow-auto bg-black/5 dark:bg-white/5 min-h-[240px] flex flex-col">
+            <template v-if="isWsLoading">
+              <div class="flex-1 flex flex-col items-center justify-center p-8 select-none">
+                <div class="relative w-12 h-12 mb-4">
+                  <div class="absolute inset-0 rounded-full border-2 border-primary/10"></div>
+                  <div class="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+                </div>
+                <span class="text-sm text-muted-foreground font-medium animate-pulse">正在获取日志内容</span>
+              </div>
+            </template>
+            <template v-else-if="!decompressedOutput.trim()">
+              <div class="flex-1 flex flex-col items-center justify-center p-8 select-none">
+                <div class="w-12 h-12 rounded-2xl bg-muted/30 flex items-center justify-center mb-4 border border-muted-foreground/5">
+                  <AlertCircle class="h-6 w-6 text-muted-foreground/40" />
+                </div>
+                <span class="text-sm text-muted-foreground font-medium">无输出内容</span>
+                <p class="text-[11px] text-muted-foreground/50 mt-1">此任务执行期间未产生标准输出日志</p>
+              </div>
+            </template>
+            <template v-else>
+              <div class="p-4 text-xs font-mono whitespace-pre-wrap break-all log-pre leading-relaxed">
+                <Ansi>{{ decompressedOutput }}</Ansi>
+              </div>
+            </template>
           </div>
         </div>
       </div>

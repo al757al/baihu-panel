@@ -335,7 +335,8 @@ onMounted(() => {
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
                 <h2 class="text-xl sm:text-2xl font-bold tracking-tight">语言依赖</h2>
-                <p class="text-muted-foreground text-sm mt-0.5">管理系统环境中的编程语言运行时及相关包依赖 (Mise)</p>
+                <p class="text-muted-foreground text-sm mt-0.5">管理编程语言及相关包依赖(Mise)</p>
+
             </div>
 
             <div class="flex flex-col sm:flex-row items-center gap-3 shrink-0 w-full md:w-auto">

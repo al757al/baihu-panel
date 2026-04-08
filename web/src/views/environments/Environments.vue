@@ -252,7 +252,7 @@ onBeforeUnmount(() => {
         <h2 class="text-xl sm:text-2xl font-bold tracking-tight">环境变量</h2>
         <p class="text-muted-foreground text-sm">管理脚本执行时的环境变量</p>
       </div>
-      <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+      <div class="flex flex-col sm:flex-row items-center sm:justify-end gap-3 w-full md:w-auto">
         <div class="flex w-full sm:w-auto items-center gap-2">
           <div class="relative flex-1 sm:flex-none">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -287,31 +287,87 @@ onBeforeUnmount(() => {
       </p>
     </div>
 
-    <div v-else class="rounded-lg border bg-card overflow-x-auto mt-4">
-      <!-- 表头 -->
+    <div v-else class="rounded-lg border bg-card mt-4 overflow-hidden">
+      <!-- 大屏表头 -->
       <div
-        class="flex items-center gap-4 px-4 py-2 border-b bg-muted/20 text-sm text-muted-foreground font-medium min-w-[500px]">
+        class="hidden sm:flex items-center gap-4 px-4 py-2 border-b bg-muted/20 text-sm text-muted-foreground font-medium">
+        <span class="w-12 shrink-0 pl-1">序号</span>
         <span class="w-32 sm:w-48 shrink-0">名称</span>
-        <span class="w-24 sm:flex-1 shrink-0 sm:shrink">值</span>
+        <span class="flex-1 min-w-0">值</span>
         <span class="w-32 sm:w-48 shrink-0 hidden md:block">备注说明</span>
-        <span class="w-28 sm:w-36 shrink-0 text-center">操作</span>
+        <span class="w-32 shrink-0 text-center">操作</span>
       </div>
-      <!-- 列表 -->
-      <div class="divide-y min-w-[500px]">
+
+      <div class="divide-y">
         <div v-if="envVars.length === 0" class="text-sm text-muted-foreground text-center py-8">
           {{ activeTab === ENV_TYPE.SECRET ? '暂无机密' : '暂无环境变量' }}
         </div>
-        <div v-for="env in envVars" :key="env.id"
-          class="flex items-center gap-4 px-4 py-2 hover:bg-muted/30 transition-colors">
+
+        <!-- 小屏卡片布局 -->
+        <div v-for="(env, index) in envVars" :key="`mobile-${env.id}`"
+          class="sm:hidden p-3 hover:bg-muted/50 transition-colors">
+          <div class="flex items-start justify-between mb-2">
+            <div class="flex items-center gap-2 flex-1 min-w-0 pr-2">
+              <span class="text-xs text-muted-foreground shrink-0 tabular-nums">#{{ total - (currentPage - 1) * pageSize - index }}</span>
+              <code class="font-bold text-xs bg-muted/60 px-2 py-0.5 rounded break-all truncate">{{ env.name }}</code>
+            </div>
+            <span class="cursor-pointer group shrink-0"
+              @click="toggleEnabled(env)" :title="env.enabled ? '已启用' : '已禁用'">
+              <div v-if="env.enabled"
+                class="h-6 w-6 rounded-md bg-green-500/10 flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
+                <Zap class="h-3.5 w-3.5 text-green-500 fill-green-500" />
+              </div>
+              <div v-else
+                class="h-6 w-6 rounded-md bg-muted flex items-center justify-center group-hover:bg-muted/80 transition-colors">
+                <ZapOff class="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+            </span>
+          </div>
+
+          <!-- 详情信息列表 -->
+          <div class="space-y-1.5 text-xs text-muted-foreground mb-3 px-1">
+            <div class="flex items-start gap-3">
+              <span class="w-8 shrink-0 font-medium mt-0.5 opacity-70">内容:</span>
+              <div class="flex-1 min-w-0 text-foreground break-all leading-relaxed">
+                <TextOverflow :text="showValues[env.id] ? env.value : maskValue(env.value)" title="查看值" />
+              </div>
+            </div>
+            <div v-if="env.remark" class="flex items-start gap-3">
+              <span class="w-8 shrink-0 font-medium mt-0.5 opacity-70">备注:</span>
+              <span class="flex-1 text-[11px] leading-relaxed">{{ env.remark }}</span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-1 pt-2 border-t">
+            <Button variant="ghost" size="sm" class="h-7 px-2 text-xs" @click="toggleShow(env.id)">
+              <Eye v-if="!showValues[env.id]" class="h-3 w-3 mr-1" />
+              <EyeOff v-else class="h-3 w-3 mr-1" />
+              {{ showValues[env.id] ? '隐藏' : '显示' }}
+            </Button>
+            <Button variant="ghost" size="sm" class="h-7 px-2 text-xs" @click="openEdit(env)">
+              <Pencil class="h-3 w-3 mr-1" />编辑
+            </Button>
+            <Button variant="ghost" size="sm" class="h-7 px-2 text-xs text-destructive" @click="confirmDelete(env.id)">
+              <Trash2 class="h-3 w-3 mr-1" />删除
+            </Button>
+          </div>
+        </div>
+
+        <!-- 大屏行布局 -->
+        <div v-for="(env, index) in envVars" :key="`desktop-${env.id}`"
+          class="hidden sm:flex items-center gap-4 px-4 py-2 hover:bg-muted/30 transition-colors">
+          <div class="w-12 shrink-0 pl-1">
+            <span class="text-muted-foreground text-xs tabular-nums">#{{ total - (currentPage - 1) * pageSize - index }}</span>
+          </div>
           <code
             class="w-32 sm:w-48 font-medium truncate shrink-0 text-xs bg-muted/40 px-2 py-1 rounded">{{ env.name }}</code>
-          <span class="w-24 sm:flex-1 shrink-0 sm:shrink font-mono text-muted-foreground truncate text-xs">
+          <span class="flex-1 min-w-0 text-muted-foreground truncate text-xs px-1">
             <TextOverflow :text="showValues[env.id] ? env.value : maskValue(env.value)" title="查看值" />
           </span>
           <span class="w-32 sm:w-48 shrink-0 text-muted-foreground truncate text-sm hidden md:block">
             <TextOverflow :text="env.remark || '-'" title="备注描述" />
           </span>
-          <span class="w-28 sm:w-36 shrink-0 flex justify-center gap-1">
+          <div class="w-32 shrink-0 flex justify-center gap-1">
             <Button variant="ghost" size="icon" class="h-7 w-7 rounded-md transition-all"
               :class="env.enabled ? 'text-green-500 bg-green-500/10 hover:bg-green-500/20' : 'text-muted-foreground bg-muted/50 hover:bg-muted'"
               @click="toggleEnabled(env)" :title="env.enabled ? '已启用（点击禁用）' : '已禁用（点击启用）'">
@@ -330,7 +386,7 @@ onBeforeUnmount(() => {
               title="删除">
               <Trash2 class="h-3.5 w-3.5" />
             </Button>
-          </span>
+          </div>
         </div>
       </div>
       <!-- 分页 -->
