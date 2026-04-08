@@ -256,7 +256,7 @@ onBeforeUnmount(() => {
         <div class="flex w-full sm:w-auto items-center gap-2">
           <div class="relative flex-1 sm:flex-none">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input v-model="filterName" placeholder="搜索名称..." class="h-9 pl-9 w-full sm:w-40 md:w-48 text-sm"
+            <Input v-model="filterName" placeholder="搜索名称..." class="h-9 pl-9 w-full sm:w-48 text-sm bg-muted/20 focus:bg-background"
               @input="handleSearch" />
           </div>
           <Button @click="openCreate" class="shrink-0 h-9" :disabled="activeTab === ENV_TYPE.SECRET && !isSecretSet">
@@ -405,8 +405,8 @@ onBeforeUnmount(() => {
         </DialogHeader>
         <div class="space-y-4 py-2 min-w-0">
           <div class="space-y-2 min-w-0">
-            <Label>{{ editingEnv.type === ENV_TYPE.SECRET ? '机密名称' : '变量名' }}</Label>
-            <Input v-model="editingEnv.name" class="w-full min-w-0" :placeholder="editingEnv.type === ENV_TYPE.SECRET ? '例如：GITHUB_TOKEN' : 'MY_VAR'" />
+            <Label class="text-sm">{{ editingEnv.type === ENV_TYPE.SECRET ? '机密名称' : '变量名' }}</Label>
+            <Input v-model="editingEnv.name" class="h-9 w-full min-w-0 text-sm" :placeholder="editingEnv.type === ENV_TYPE.SECRET ? '例如：GITHUB_TOKEN' : 'MY_VAR'" />
           </div>
           <div class="space-y-2 min-w-0">
             <Label>

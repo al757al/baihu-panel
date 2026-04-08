@@ -316,10 +316,10 @@ onMounted(() => {
           <p class="text-muted-foreground text-sm">配置通知渠道，绑定系统事件实现自动推送</p>
         </div>
         <TabsList class="flex w-full sm:w-fit overflow-x-auto overflow-y-hidden justify-start sm:justify-center bg-muted/50 p-1 rounded-xl scrollbar-hide border border-border/50">
-          <TabsTrigger value="channels" class="flex-1 sm:flex-none whitespace-nowrap px-3 sm:px-6">渠道管理</TabsTrigger>
-          <TabsTrigger value="templates" class="flex-1 sm:flex-none whitespace-nowrap px-3 sm:px-6">推送模板</TabsTrigger>
-          <TabsTrigger value="events" class="flex-1 sm:flex-none whitespace-nowrap px-3 sm:px-6">事件绑定</TabsTrigger>
-          <TabsTrigger value="api" class="flex-1 sm:flex-none whitespace-nowrap px-3 sm:px-6">脚本调用</TabsTrigger>
+          <TabsTrigger value="channels" class="flex-1 sm:flex-none whitespace-nowrap px-3 sm:px-6 text-sm">渠道管理</TabsTrigger>
+          <TabsTrigger value="templates" class="flex-1 sm:flex-none whitespace-nowrap px-3 sm:px-6 text-sm">推送模板</TabsTrigger>
+          <TabsTrigger value="events" class="flex-1 sm:flex-none whitespace-nowrap px-3 sm:px-6 text-sm">事件绑定</TabsTrigger>
+          <TabsTrigger value="api" class="flex-1 sm:flex-none whitespace-nowrap px-3 sm:px-6 text-sm">脚本调用</TabsTrigger>
         </TabsList>
       </div>
 

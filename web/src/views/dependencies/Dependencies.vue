@@ -264,20 +264,20 @@ onMounted(async () => {
           </div>
           <div class="flex items-center gap-2 flex-1 justify-end">
             <div class="relative flex-1 max-w-[200px]">
-              <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
-              <Input v-model="searchQuery" placeholder="搜索包名..." class="h-8 sm:h-9 pl-8 w-full text-[11px] sm:text-sm bg-background/50 focus:bg-background transition-all" />
+              <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input v-model="searchQuery" placeholder="搜索包名..." class="h-9 pl-9 w-full text-sm bg-background focus:bg-background transition-all" />
             </div>
             <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              <Button variant="outline" size="icon" class="h-8 w-8 sm:h-9 sm:w-9 shrink-0 shadow-sm" @click="loadDeps" :disabled="loading">
-                <RefreshCw class="h-3.5 w-3.5 sm:h-4 sm:w-4" :class="{ 'animate-spin': loading }" />
+              <Button variant="outline" size="icon" class="h-9 w-9 shrink-0 shadow-sm" @click="loadDeps" :disabled="loading">
+                <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
               </Button>
-              <Button variant="outline" size="sm" class="h-8 sm:h-9 px-2 sm:px-3 text-[11px] sm:text-xs shrink-0 shadow-sm" @click="reinstallAll"
+              <Button variant="outline" size="sm" class="h-9 px-3 text-sm shrink-0 shadow-sm" @click="reinstallAll"
                 :disabled="reinstallingAll || filteredDeps.length === 0">
-                <RotateCw class="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-1.5" :class="{ 'animate-spin': reinstallingAll }" /> <span
+                <RotateCw class="h-4 w-4 sm:mr-1.5" :class="{ 'animate-spin': reinstallingAll }" /> <span
                   class="hidden sm:inline">全部重装</span>
               </Button>
-              <Button size="sm" class="h-8 sm:h-9 px-2 sm:px-3 text-[11px] sm:text-xs shrink-0 shadow-sm" @click="openInstallDialog">
-                <Download class="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-1.5" /> <span class="hidden sm:inline">安装包</span>
+              <Button size="sm" class="h-9 px-3 text-sm shrink-0 shadow-sm" @click="openInstallDialog">
+                <Download class="h-4 w-4 sm:mr-1.5" /> <span class="hidden sm:inline">安装包</span>
               </Button>
             </div>
           </div>

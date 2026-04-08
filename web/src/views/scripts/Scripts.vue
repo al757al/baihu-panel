@@ -300,7 +300,7 @@ onMounted(loadTree)
     <!-- File Tree -->
     <div class="w-full lg:w-56 flex-shrink-0 border rounded-lg bg-card flex flex-col max-h-[200px] lg:max-h-none">
       <div class="p-2 border-b flex items-center justify-between">
-        <span class="text-xs font-medium">脚本文件</span>
+        <span class="text-sm font-medium pl-1">脚本文件</span>
         <div class="flex gap-0.5">
           <Button variant="ghost" size="icon" class="h-6 w-6" title="新建文件" @click="openCreateDialog('file')">
             <FilePlus class="h-3 w-3" />
@@ -367,15 +367,15 @@ onMounted(loadTree)
           <div v-if="selectedDir" class="text-xs text-muted-foreground">
             位置: {{ selectedDir }}/
           </div>
-          <Input v-model="createName" class="h-8 text-xs"
+          <Input v-model="createName" class="h-9 text-sm"
             :placeholder="createType === 'file' ? 'example.js' : 'folder-name'" @keyup.enter="createItem" />
           <div v-if="createName" class="text-xs text-muted-foreground">
             完整路径: {{ createFullPath }}
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" size="sm" class="h-7 text-xs" @click="showCreateDialog = false">取消</Button>
-          <Button size="sm" class="h-7 text-xs" @click="createItem">创建</Button>
+          <Button variant="outline" size="sm" class="h-8 text-xs px-4" @click="showCreateDialog = false">取消</Button>
+          <Button size="sm" class="h-8 text-xs px-4" @click="createItem">创建</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

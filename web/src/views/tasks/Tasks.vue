@@ -352,12 +352,12 @@ watch(() => route.query.agent_id, (newVal: any) => {
         <div class="flex flex-row items-center gap-2 flex-1 sm:flex-1 lg:flex-none lg:w-auto text-sm">
           <div class="relative flex-1 sm:flex-1 lg:max-w-[240px] group">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-            <Input v-model="filterName" placeholder="搜索任务..." class="h-9 pl-9 w-full bg-muted/20 border-muted-foreground/10 focus:bg-background"
+            <Input v-model="filterName" placeholder="搜索任务..." class="h-9 pl-9 w-full bg-muted/20 border-muted-foreground/10 focus:bg-background text-sm"
               @input="handleSearch" />
           </div>
           <div class="relative flex-1 sm:flex-1 lg:max-w-[180px] group">
             <Tag class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-            <Input v-model="filterTags" placeholder="搜索标签..." class="h-9 pl-9 w-full bg-muted/20 border-muted-foreground/10 focus:bg-background"
+            <Input v-model="filterTags" placeholder="搜索标签..." class="h-9 pl-9 w-full bg-muted/20 border-muted-foreground/10 focus:bg-background text-sm"
               @input="handleSearch" />
           </div>
         </div>
@@ -400,9 +400,9 @@ watch(() => route.query.agent_id, (newVal: any) => {
 
             <!-- 桌面端类型切换 -->
             <Tabs :model-value="filterType" @update:model-value="(v: string | number) => { filterType = String(v); handleTypeChange() }" class="shrink-0 hidden lg:block">
-               <TabsList class="h-9 p-1 bg-muted/30 border">
-                  <TabsTrigger :value="TASK_TYPE.NORMAL" class="px-4 h-7 text-[13px]">定时任务</TabsTrigger>
-                  <TabsTrigger :value="TASK_TYPE.REPO" class="px-4 h-7 text-[13px]">仓库同步</TabsTrigger>
+            <TabsList class="h-9 p-1 bg-muted/30 border">
+                  <TabsTrigger :value="TASK_TYPE.NORMAL" class="px-4 h-7 text-sm">定时任务</TabsTrigger>
+                  <TabsTrigger :value="TASK_TYPE.REPO" class="px-4 h-7 text-sm">仓库同步</TabsTrigger>
                </TabsList>
             </Tabs>
           </div>

@@ -380,11 +380,11 @@ onMounted(() => {
                 <div class="rounded-lg border bg-card overflow-hidden">
                     <div
                         class="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b bg-muted/30 gap-2 sm:gap-4">
-                        <div class="relative flex-1 max-w-sm">
+                        <div class="relative w-full sm:w-64 group">
                             <Search
-                                class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                                class="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 transition-colors group-focus-within:text-primary" />
                             <Input v-model="searchQuery" placeholder="搜索语言或版本..."
-                                class="h-8 sm:h-9 pl-8 text-xs sm:text-sm bg-background/50 focus:bg-background transition-all" />
+                                class="h-9 pl-9 text-sm bg-muted/20 border-border/40 focus:bg-background transition-all" />
                         </div>
                         <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
                             <Button variant="outline" class="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm shadow-sm"
@@ -412,18 +412,17 @@ onMounted(() => {
                         </div>
                         <template v-else>
                             <div v-for="(lang, index) in filteredLanguages" :key="lang.plugin + lang.version"
-                                class="flex flex-row items-center px-2 sm:px-4 py-2.5 sm:py-3 hover:bg-muted/30 transition-colors gap-2 sm:gap-4 relative group">
-                                <div class="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-                                    <div class="flex items-center justify-center w-6 sm:w-8 shrink-0">
-                                        <span
-                                            class="text-xs font-mono text-muted-foreground tabular-nums">#{{
+                                class="flex flex-col sm:flex-row sm:items-center px-4 py-3 hover:bg-muted/30 transition-colors gap-3 sm:gap-4 relative group group/item">
+                                <!-- 序号与基础信息 (左侧/顶部) -->
+                                <div class="flex items-center gap-3 overflow-hidden flex-1">
+                                    <div class="flex items-center justify-center w-8 shrink-0">
+                                        <span class="text-xs font-mono text-muted-foreground/60 tabular-nums">#{{
                                             filteredLanguages.length - index }}</span>
                                     </div>
                                     <div
-                                        class="h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-primary/10 flex items-center justify-center font-bold text-primary uppercase overflow-hidden shrink-0 border border-primary/10 shadow-sm ml-1 sm:ml-0">
+                                        class="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center font-bold text-primary uppercase overflow-hidden shrink-0 border border-primary/10 shadow-sm">
                                         <template v-if="getLangIcon(lang.plugin)">
-                                            <div
-                                                class="w-full h-full bg-white/90 p-1.5 flex items-center justify-center">
+                                            <div class="w-full h-full bg-white/95 p-1.5 flex items-center justify-center">
                                                 <img :src="getLangIcon(lang.plugin)" :alt="lang.plugin"
                                                     class="w-full h-full object-contain" />
                                             </div>
@@ -433,53 +432,50 @@ onMounted(() => {
                                                 lang.plugin.substring(0, 2) : lang.plugin }}</span>
                                         </template>
                                     </div>
-                                    <div
-                                        class="flex flex-col lg:flex-row lg:items-center gap-0.5 lg:gap-4 flex-1 min-w-0">
-                                        <div class="flex items-center gap-2 min-w-[120px] shrink-0">
-                                            <span class="font-bold capitalize truncate text-[13px] sm:text-sm">{{
+                                    <div class="flex flex-col min-w-0 flex-1">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="font-bold capitalize truncate text-sm text-foreground">{{
                                                 lang.plugin }}</span>
-                                            <Badge variant="outline"
-                                                class="font-mono text-[10px] h-4 px-1 bg-background/50">{{ lang.version
-                                                }}</Badge>
+                                            <Badge variant="outline" class="font-mono text-[10px] h-4.5 px-1.5 bg-background/50 border-muted-foreground/20">{{ lang.version }}</Badge>
                                             <Badge v-if="lang.isGlobal" variant="secondary"
-                                                class="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[10px] h-4 px-1.5 font-normal">
+                                                class="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[10px] h-4.5 px-1.5 font-medium">
                                                 默认
                                             </Badge>
                                         </div>
-                                        <div class="hidden lg:block w-px h-3 bg-border/50 shrink-0" />
-                                        <div class="text-xs text-muted-foreground truncate opacity-60 hover:opacity-100 hover:text-primary transition-all cursor-help"
-                                            @click="viewDetail(lang)">
-                                            <span class="hidden md:inline mr-1 opacity-60">来源:</span>
-                                            <span class="font-mono truncate" :title="lang.source">{{ lang.source
-                                                }}</span>
+                                        <div class="text-[11px] text-muted-foreground truncate opacity-70 mt-0.5 cursor-help hover:text-primary transition-colors flex items-center" @click="viewDetail(lang)">
+                                            <span class="font-mono truncate">{{ lang.source }}</span>
                                         </div>
                                     </div>
+                                    <!-- 仅移动端显示的删除按钮 -->
+                                    <Button variant="ghost" size="icon" class="h-8 w-8 sm:hidden text-muted-foreground hover:text-destructive shrink-0" @click="confirmDelete(lang)">
+                                        <Trash2 class="h-4 w-4" />
+                                    </Button>
                                 </div>
 
-                                <div class="flex items-center gap-1 sm:gap-1.5 shrink-0 ml-auto">
-                                    <div
-                                        class="flex items-center gap-1 bg-muted/20 p-0.5 rounded-lg border border-border/40">
-                                        <Button v-if="SUPPORTED_DEPS_LANGS.includes(lang.plugin)" variant="ghost"
-                                            size="sm"
-                                            class="h-7 px-1.5 sm:px-2 text-xs font-semibold whitespace-nowrap hover:bg-background hover:shadow-sm"
+                                <!-- 操作按钮 (右侧/底部) -->
+                                <div class="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-0 border-border/10">
+                                    <div class="flex items-center gap-1.5 bg-muted/30 sm:bg-transparent p-1 sm:p-0 rounded-lg w-full sm:w-auto overflow-x-auto no-scrollbar">
+                                        <Button v-if="SUPPORTED_DEPS_LANGS.includes(lang.plugin)" variant="ghost" size="sm"
+                                            class="h-7.5 px-2.5 sm:px-2 text-xs font-semibold whitespace-nowrap bg-background/50 sm:bg-transparent hover:bg-background hover:shadow-sm flex-1 sm:flex-none"
                                             @click="$router.push(`/dependencies?language=${lang.plugin}&version=${lang.version}`)">
                                             依赖
                                         </Button>
                                         <Button variant="ghost" size="sm"
-                                            class="h-7 px-1.5 sm:px-2 text-xs font-semibold whitespace-nowrap hover:bg-background hover:shadow-sm"
+                                            class="h-7.5 px-2.5 sm:px-2 text-xs font-semibold whitespace-nowrap bg-background/50 sm:bg-transparent hover:bg-background hover:shadow-sm flex-1 sm:flex-none"
                                             @click="handleVerify(lang)">
                                             验证
                                         </Button>
                                         <Button variant="ghost" size="sm"
-                                            :class="cn('h-7 px-1.5 sm:px-2 text-xs font-semibold whitespace-nowrap hover:bg-background hover:shadow-sm', lang.isGlobal ? 'text-amber-600 bg-amber-500/10' : '')"
+                                            :class="cn('h-7.5 px-2.5 sm:px-2 text-xs font-semibold whitespace-nowrap bg-background/50 sm:bg-transparent hover:bg-background hover:shadow-sm flex-1 sm:flex-none', lang.isGlobal ? 'text-amber-600 bg-amber-500/10 dark:bg-amber-500/20' : '')"
                                             @click="toggleDefault(lang)">
                                             默认
                                         </Button>
                                     </div>
+                                    <!-- 桌面端显示的删除按钮 -->
                                     <Button variant="ghost" size="icon"
-                                        class="h-7.5 w-7.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all opacity-40 group-hover:opacity-100"
+                                        class="hidden sm:flex h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all opacity-0 group-hover/item:opacity-100"
                                         @click="confirmDelete(lang)" title="卸载">
-                                        <Trash2 class="h-3.5 w-3.5" />
+                                        <Trash2 class="h-4 w-4" />
                                     </Button>
                                 </div>
                             </div>
@@ -709,7 +705,7 @@ onMounted(() => {
                 <div class="flex flex-col h-full">
                     <div class="flex items-center justify-between px-4 py-2 bg-[#252526] border-b border-[#3c3c3c]">
                         <div class="flex items-center gap-2">
-                            <TerminalIcon class="h-4 w-4 text-primary" />
+                            <TerminalIcon class="h-4 w-4 text-white" />
                             <span class="text-xs font-medium text-gray-300">正在安装 / 执行: {{ terminalCommand }}</span>
                         </div>
                         <Button variant="ghost" size="icon" class="h-6 w-6 text-gray-400 hover:text-white"
