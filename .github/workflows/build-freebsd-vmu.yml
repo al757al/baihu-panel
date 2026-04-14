@@ -1,18 +1,37 @@
+name: Build for FreeBSD
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
 jobs:
-  build-freebsd:
+  build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [freebsd]
+        goarch: [amd64]
     steps:
-      - uses: actions/checkout@v4
-      - name: Build in FreeBSD VM
-        uses: vmactions/freebsd-vm@v1.0.7
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          usesh: true
-          prepare: |
-            pkg install -y go node
-          run: |
-            export PATH=$PATH:/usr/local/go/bin
-            cd web
-            npm install
-            npm run build
-            cd ..
-            go build -o baihu-server-freebsd ./main.go
+          go-version: 'stable'
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          go mod download
+          go build -o baihu-server-${{ matrix.goos }}-${{ matrix.goarch }} ./main.go
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: baihu-server-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: baihu-server-${{ matrix.goos }}-${{ matrix.goarch }}
