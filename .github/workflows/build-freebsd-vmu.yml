@@ -1,4 +1,4 @@
-name: Build for FreeBSD
+name: Build Baihu for FreeBSD
 
 on:
   push:
@@ -8,30 +8,53 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        goos: [freebsd]
-        goarch: [amd64]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Go
+      # 1. 安装 Node.js 并编译前端
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build frontend
+        run: |
+          cd web
+          npm install
+          npm run build
+          # 构建完成后，dist 目录会出现在 web/dist
+          cd ..
+          # 将前端静态文件复制到后端期望的位置（这里假设后端寻找 ./public）
+          mkdir -p public
+          cp -r web/dist/* public/
+
+      # 2. 安装 Go 并编译后端
+      - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.22'
 
-      - name: Build
+      - name: Build backend for FreeBSD
         env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
+          GOOS: freebsd
+          GOARCH: amd64
           CGO_ENABLED: 0
         run: |
           go mod download
-          go build -o baihu-server-${{ matrix.goos }}-${{ matrix.goarch }} ./main.go
+          go build -o baihu-server ./main.go
+
+      # 3. 打包完整产物（后端 + 前端静态文件）
+      - name: Package artifact
+        run: |
+          mkdir -p baihu-panel
+          cp baihu-server baihu-panel/
+          cp -r public baihu-panel/public
+          # 可选：生成默认配置文件（运行一次 --init-config）
+          # 但这里不需要，因为运行时会在 Serv00 上生成
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: baihu-server-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: baihu-server-${{ matrix.goos }}-${{ matrix.goarch }}
+          name: baihu-freebsd-amd64
+          path: baihu-panel/
