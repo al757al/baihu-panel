@@ -1,0 +1,18 @@
+jobs:
+  build-freebsd:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build in FreeBSD VM
+        uses: vmactions/freebsd-vm@v1.0.7
+        with:
+          usesh: true
+          prepare: |
+            pkg install -y go node
+          run: |
+            export PATH=$PATH:/usr/local/go/bin
+            cd web
+            npm install
+            npm run build
+            cd ..
+            go build -o baihu-server-freebsd ./main.go
