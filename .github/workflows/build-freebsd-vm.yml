@@ -7,13 +7,13 @@ on:
 
 jobs:
   build-freebsd:
-    runs-on: macos-latest # vmactions/freebsd-vm 在某些 Ubuntu 版本上有兼容性问题，macOS 运行更稳定
+    runs-on: ubuntu-latest # vmactions/freebsd-vm 在某些 Ubuntu 版本上有兼容性问题，macOS 运行更稳定
     steps:
       - uses: actions/checkout@v4
       
       - name: Build in FreeBSD VM
         id: test
-        uses: vmactions/freebsd-vm@v1
+        uses: vmactions/freebsd-vm@v1.0.7
         with:
           envs: 'MY_ENV my_secret'
           usesh: true
