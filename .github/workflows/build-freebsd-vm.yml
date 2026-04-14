@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-freebsd:
-    runs-on: macos-13 # vmactions/freebsd-vm 在某些 Ubuntu 版本上有兼容性问题，macOS 运行更稳定
+    runs-on: macos-latest # vmactions/freebsd-vm 在某些 Ubuntu 版本上有兼容性问题，macOS 运行更稳定
     steps:
       - uses: actions/checkout@v4
       
