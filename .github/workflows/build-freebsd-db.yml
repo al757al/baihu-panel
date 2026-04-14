@@ -1,0 +1,47 @@
+name: 编译 Baihu FreeBSD 版本
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:  # 支持手动触发编译
+
+jobs:
+  build-freebsd:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取源码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js（编译前端）
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 安装 Go（编译后端）
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.21
+
+      - name: 编译前端
+        run: |
+          cd web
+          npm install --registry=https://registry.npmmirror.com
+          npm run build
+          cd ..
+
+      - name: 编译 FreeBSD 后端
+        run: |
+          env CGO_ENABLED=0 GOOS=freebsd GOARCH=amd64 go build -ldflags "-s -w" -o baihu main.go
+          chmod +x baihu
+
+      - name: 打包成品
+        run: |
+          mkdir release
+          cp baihu release/
+          cp -r configs release/
+          zip -r baihu-freebsd-amd64.zip release/*
+
+      - name: 上传编译产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: baihu-freebsd-amd64
+          path: baihu-freebsd-amd64.zip
