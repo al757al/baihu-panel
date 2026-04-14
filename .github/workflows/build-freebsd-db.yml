@@ -1,43 +1,51 @@
-name: 编译 Baihu FreeBSD 版本
+name: 编译 Baihu FreeBSD 版本（修复前端缺失）
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:  # 支持手动触发编译
+  workflow_dispatch:
 
 jobs:
   build-freebsd:
     runs-on: ubuntu-latest
     steps:
-      - name: 拉取源码
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: 安装 Node.js（编译前端）
+      - name: 安装 Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: 安装 Go（编译后端）
+      - name: 安装 Go
         uses: actions/setup-go@v5
         with:
           go-version: 1.21
 
-      - name: 编译前端
+      # 编译前端
+      - name: 编译前端 Vue
         run: |
           cd web
           npm install --registry=https://registry.npmmirror.com
           npm run build
           cd ..
 
-      - name: 编译 FreeBSD 后端
+      # 编译后端 FreeBSD
+      - name: 编译后端 Go
         run: |
           env CGO_ENABLED=0 GOOS=freebsd GOARCH=amd64 go build -ldflags "-s -w" -o baihu main.go
           chmod +x baihu
 
+      # ✅ 关键修复：把 dist 复制到根目录，一起打包
+      - name: 复制前端 dist 到根目录
+        run: |
+          cp -r web/dist ./dist
+
+      # 打包所有必需文件
       - name: 打包成品
         run: |
-          mkdir release
+          mkdir -p release
           cp baihu release/
           cp -r configs release/
+          cp -r dist release/   # 这里把前端也打包进去了
           zip -r baihu-freebsd-amd64.zip release/*
 
       - name: 上传编译产物
