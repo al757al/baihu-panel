@@ -2,20 +2,18 @@ name: Build Baihu Panel for FreeBSD (Serv00)
 
 于:
   push:
-    分支: [ main ]
-    标签: [ 'v*' ]
+    branches: [ main ]
+    tags: [ 'v*' ]
   workflow_dispatch:  # 允许手动触发
-  schedule:
-    - cron: '0 0 1 1 1'
 
 jobs:
   build-freebsd:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout source repository (直接使用作者库)
+      - name: Checkout source repository
         uses: actions/checkout@v4
         with:
-          仓库: engigu/baihu-panel
+          repository: engigu/baihu-panel
           ref: main
           fetch-depth: 0
 
@@ -27,7 +25,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.22'  # ← 修改这里
+          go-version: '1.22'
           cache: true
           cache-dependency-path: go.sum
 
@@ -52,7 +50,7 @@ jobs:
       - name: Build Go binary for FreeBSD
         env:
           GOOS: freebsd
-          GOARCH: amd64
+          GOARCH: amd64  # ← 直接指定架构，不使用变量
           CGO_ENABLED: 0
         run: |
           mkdir -p bin
@@ -77,5 +75,5 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          文件: bin/baihu-freebsd-amd64
+          files: bin/baihu-freebsd-amd64
           generate_release_notes: true
