@@ -1,38 +1,47 @@
-name: Build for FreeBSD using VM
-
+name: 官方标准编译 白虎面板 FreeBSD 单文件
 on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+  workflow_dispatch: # 手动触发（推荐）
 
 jobs:
-  build-freebsd:
-    runs-on: ubuntu-latest # vmactions/freebsd-vm 在某些 Ubuntu 版本上有兼容性问题，macOS 运行更稳定
+  build:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Build in FreeBSD VM
-        id: test
-        uses: vmactions/freebsd-vm@v1.0.7
+      - name: 拉取作者官方源码
+        uses: actions/checkout@v4
         with:
-          envs: 'MY_ENV my_secret'
-          usesh: true
-          prepare: |
-            pkg install -y go node
+          repository: engigu/baihu-panel
+          fetch-depth: 1
 
-          run: |
-            # 设置 Go 环境
-            export PATH=$PATH:/usr/local/go/bin
-            # 下载前端依赖并构建
-            cd web
-            npm install
-            npm run build
-            cd ..
-            # 编译后端
-            go build -o baihu-server-freebsd ./main.go
+      # 1. 安装 Node.js 构建前端（必须！生成dist文件）
+      - name: 安装 Node 环境
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
-      - name: Upload Artifact
+      - name: 构建前端生成静态资源
+        run: |
+          cd frontend
+          npm install
+          npm run build
+          # 把构建好的dist复制到Go嵌入目录（作者官方路径）
+          cp -r dist ../internal/static/
+
+      # 2. 安装 Go 环境
+      - name: 安装 Go 环境
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      # 3. 核心：启用 -tags web 编译 FreeBSD 纯静态二进制
+      - name: 交叉编译 Serv00 适配版
+        run: |
+          CGO_ENABLED=0 GOOS=freebsd GOARCH=amd64 go build -trimpath -tags web -ldflags "-w -s" -o baihu-panel
+
+      # 4. 上传最终单文件
+      - name: 上传编译产物
         uses: actions/upload-artifact@v4
         with:
-          name: baihu-server-freebsd
-          path: baihu-server-freebsd
+          name: baihu-panel-freebsd-serv00
+          path: baihu-panel
