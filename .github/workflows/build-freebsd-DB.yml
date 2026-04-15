@@ -1,32 +1,33 @@
-name: 白虎面板 FreeBSD 编译 (Serv00专用)
+name: 白虎面板 FreeBSD 编译 (Serv00终极版)
 on:
-  workflow_dispatch:  # 手动触发编译（推荐）
+  workflow_dispatch:  # 手动触发
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # 1. 拉取作者官方源码
-      - name: 检出源码
+      - name: 拉取作者官方源码
         uses: actions/checkout@v4
         with:
           repository: engigu/baihu-panel
           fetch-depth: 1
 
-      # 2. 安装Go环境
-      - name: 设置Go
+      # 🔥 修复核心：自动创建dist目录，解决embed文件找不到
+      - name: 创建前端资源目录
+        run: mkdir -p internal/static/dist
+
+      - name: 设置 Go 环境
         uses: actions/setup-go@v5
         with:
           go-version: '1.22'
 
-      # 3. 核心编译：启用官方 web 标签 + FreeBSD 纯静态编译
-      - name: 编译单文件二进制
+      # 编译：启用web标签 + FreeBSD纯静态 + 压缩体积
+      - name: 编译单文件程序
         run: |
           CGO_ENABLED=0 GOOS=freebsd GOARCH=amd64 go build -trimpath -tags web -ldflags "-w -s" -o baihu-panel
 
-      # 4. 上传最终可执行文件
-      - name: 上传产物
+      - name: 上传编译产物
         uses: actions/upload-artifact@v4
         with:
-          name: baihu-panel-freebsd
+          name: baihu-panel-freebsd-serv00
           path: baihu-panel
