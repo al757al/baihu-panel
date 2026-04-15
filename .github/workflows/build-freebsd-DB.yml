@@ -1,44 +1,32 @@
-name: 编译白虎面板 FreeBSD 单文件
+name: 白虎面板 FreeBSD 编译 (Serv00专用)
 on:
-  workflow_dispatch: # 手动触发编译（点一下就用）
+  workflow_dispatch:  # 手动触发编译（推荐）
 
 jobs:
-  build-freebsd:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: 拉取作者官方源码
+      # 1. 拉取作者官方源码
+      - name: 检出源码
         uses: actions/checkout@v4
         with:
           repository: engigu/baihu-panel
           fetch-depth: 1
 
-      # 1. 构建前端（生成dist静态资源，核心步骤）
-      - name: 安装 Node.js 环境
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20 # 适配前端构建
-
-      - name: 编译前端资源
-        run: |
-          cd frontend
-          npm install
-          npm run build
-          # 复制dist到Go嵌入目录（作者官方要求）
-          cp -r dist ../internal/static/
-
-      # 2. 编译Go程序（启用官方web标签，纯静态FreeBSD版本）
-      - name: 安装 Go 环境
+      # 2. 安装Go环境
+      - name: 设置Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.22'
 
-      - name: 交叉编译 Serv00 专用版
+      # 3. 核心编译：启用官方 web 标签 + FreeBSD 纯静态编译
+      - name: 编译单文件二进制
         run: |
           CGO_ENABLED=0 GOOS=freebsd GOARCH=amd64 go build -trimpath -tags web -ldflags "-w -s" -o baihu-panel
 
-      # 3. 上传最终单文件
-      - name: 上传编译产物
+      # 4. 上传最终可执行文件
+      - name: 上传产物
         uses: actions/upload-artifact@v4
         with:
-          name: baihu-panel-freebsd-serv00
+          name: baihu-panel-freebsd
           path: baihu-panel
