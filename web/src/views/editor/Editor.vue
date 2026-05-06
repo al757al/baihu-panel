@@ -13,6 +13,8 @@ import { PATHS, FILE_RUNNERS } from '@/constants'
 import FileSidebar from './components/FileSidebar.vue'
 import RunConfigDialog from './components/RunConfigDialog.vue'
 import FileActionDialogs from './components/FileActionDialogs.vue'
+import BaihuDialog from '@/components/ui/BaihuDialog.vue'
+import { AlertCircle } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
@@ -30,6 +32,12 @@ const isLoading = ref(false)
 const isRefreshing = ref(false)
 const isEditMode = ref(false)
 const hasChanges = computed(() => fileContent.value !== originalContent.value)
+
+const confirmLeave = ref({
+  show: false,
+  path: '',
+  onConfirm: () => {}
+})
 
 // Component Refs
 const dialogsRef = ref<InstanceType<typeof FileActionDialogs> | null>(null)
@@ -166,7 +174,17 @@ async function handleSelect(node: FileNode) {
     expandedDirs.value = new Set(expandedDirs.value)
     selectedFile.value = null
   } else {
-    if (hasChanges.value && !confirm('当前文件有未保存的更改，是否放弃？')) return
+    if (hasChanges.value) {
+      confirmLeave.value = {
+        show: true,
+        path: node.path,
+        onConfirm: () => {
+          originalContent.value = fileContent.value // 假装保存或标记为已确认放弃
+          loadFile(node.path)
+        }
+      }
+      return
+    }
     await loadFile(node.path)
   }
 }
@@ -528,5 +546,28 @@ onUnmounted(() => {
         </div>
       </DialogContent>
     </Dialog>
+
+    <BaihuDialog v-model:open="confirmLeave.show" title="未保存的更改" icon="AlertCircle" size="sm">
+      <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-1">
+        <div class="h-12 w-12 rounded-full bg-yellow-500/10 flex items-center justify-center shrink-0">
+          <AlertCircle class="h-6 w-6 text-yellow-500" />
+        </div>
+        <div class="flex-1 text-center sm:text-left">
+          <p class="text-sm text-foreground/90 leading-relaxed font-medium">文件尚未保存</p>
+          <p class="text-[13px] text-muted-foreground mt-1">
+            当前文件有未保存的更改。如果现在离开，您的更改将会丢失。
+          </p>
+          <div class="mt-3 px-2 py-1.5 bg-muted/50 rounded text-[11px] font-mono text-muted-foreground break-all border border-muted">
+            {{ confirmLeave.path }}
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex flex-col-reverse sm:flex-row gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+          <Button variant="outline" @click="confirmLeave.show = false" class="w-full sm:w-24">继续编辑</Button>
+          <Button variant="destructive" @click="confirmLeave.show = false; confirmLeave.onConfirm()" class="w-full sm:w-auto px-6">放弃更改</Button>
+        </div>
+      </template>
+    </BaihuDialog>
   </div>
 </template>

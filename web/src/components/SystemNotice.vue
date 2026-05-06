@@ -110,8 +110,7 @@ function getLevelColor(level: string) {
             <div class="flex items-start justify-between gap-2 mb-1 cursor-pointer" @click="markAsRead(notice.id)">
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-1">
-                  <Badge :variant="getLevelColor(notice.level) as any" class="px-1.5 py-0 text-[10px]">{{ notice.level
-                    || 'info' }}</Badge>
+                  <Badge :variant="getLevelColor(notice.level) as any" class="px-1.5 py-0 text-[10px]">{{ notice.level === 'error' ? '错误' : (notice.level === 'warning' ? '警告' : '提示') }}</Badge>
                   <span class="text-sm font-medium truncate">{{ notice.title }}</span>
                 </div>
                 <p class="text-xs text-muted-foreground line-clamp-2">{{ notice.content }}</p>

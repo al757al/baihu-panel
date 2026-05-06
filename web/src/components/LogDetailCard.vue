@@ -196,7 +196,7 @@ function getStatusBadgeClass(status: string) {
       class="px-4 py-3 border-b space-y-2 text-sm text-foreground/80 shrink-0 overflow-y-auto max-h-[40vh]">
       <div class="flex justify-between items-center h-6">
         <span class="text-sm font-normal text-muted-foreground">任务名称</span>
-        <span class="text-sm font-normal text-muted-foreground">{{ log.task_name }}</span>
+        <span class="text-xs font-normal text-muted-foreground">{{ log.task_name }}</span>
       </div>
       <div class="flex justify-between items-center h-8">
         <span class="text-sm font-normal text-muted-foreground">状态</span>
@@ -221,15 +221,15 @@ function getStatusBadgeClass(status: string) {
       </div>
       <div class="flex justify-between items-center h-6">
         <span class="text-sm font-normal text-muted-foreground">耗时</span>
-        <span class="text-sm font-normal text-muted-foreground">{{ formatDuration(currentDuration) }}</span>
+        <span class="text-xs font-normal text-muted-foreground">{{ formatDuration(currentDuration) }}</span>
       </div>
       <div class="flex justify-between items-center h-6">
         <span class="text-sm font-normal text-muted-foreground">开始时间</span>
-        <span class="text-sm font-normal text-muted-foreground">{{ log.start_time || '-' }}</span>
+        <span class="text-xs font-normal text-muted-foreground">{{ log.start_time || '-' }}</span>
       </div>
       <div class="flex justify-between items-center h-6">
         <span class="text-sm font-normal text-muted-foreground">结束时间</span>
-        <span class="text-sm font-normal text-muted-foreground">{{ log.end_time || '-' }}</span>
+        <span class="text-xs font-normal text-muted-foreground">{{ log.end_time || '-' }}</span>
       </div>
       <div class="pt-1.5 pb-1">
         <span class="text-sm font-normal text-muted-foreground block mb-1">执行命令</span>

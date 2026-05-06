@@ -3,6 +3,7 @@ package vo
 import (
 	"github.com/engigu/baihu-panel/internal/executor"
 	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/engigu/baihu-panel/internal/utils"
 )
 
 // TaskVO 任务视图对象
@@ -26,10 +27,12 @@ type TaskVO struct {
 	RetryCount    int                 `json:"retry_count"`
 	RetryInterval int                 `json:"retry_interval"`
 	RandomRange   int                 `json:"random_range"`
+	PinType       string              `json:"pin_type"`
 	LastRun       *models.LocalTime   `json:"last_run"`
 	NextRun     *models.LocalTime   `json:"next_run"`
 	CreatedAt   models.LocalTime    `json:"created_at"`
 	UpdatedAt   models.LocalTime    `json:"updated_at"`
+	RunningStatus string              `json:"running_status"`
 }
 
 // ToTaskVO 将 Task 模型转换为 TaskVO
@@ -53,14 +56,21 @@ func ToTaskVO(task *models.Task) *TaskVO {
 		Languages:   task.Languages,
 		AgentID:       task.AgentID,
 		RepoTaskID:    task.RepoTaskID,
-		Enabled:       task.Enabled,
+		Enabled:       utils.DerefBool(task.Enabled, true),
 		RetryCount:    task.RetryCount,
 		RetryInterval: task.RetryInterval,
 		RandomRange:   task.RandomRange,
+		PinType:       task.PinType,
 		LastRun:       task.LastRun,
 		NextRun:     task.NextRun,
 		CreatedAt:   task.CreatedAt,
 		UpdatedAt:   task.UpdatedAt,
+		RunningStatus: func() string {
+			if task.IsRunning() {
+				return "running"
+			}
+			return "idle"
+		}(),
 	}
 }
 

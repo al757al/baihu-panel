@@ -27,7 +27,11 @@ func AuthRequired() gin.HandlerFunc {
 				origin = c.GetHeader("Referer")
 			}
 			// 如果有 Origin 且不匹配则拒绝（实际部署时应配置允许的 Origin）
-			// 这里由于是通用逻辑，暂且记录日志或做更严谨的校验
+			if origin != "" && !utils.CheckWSOrigin(c.Request) {
+				utils.Forbidden(c, "CSRF 校验失败: 非法的请求来源")
+				c.Abort()
+				return
+			}
 		}
 
 		token, err := c.Cookie(constant.CookieName)
@@ -257,5 +261,27 @@ func SwaggerAuth() gin.HandlerFunc {
 			"msg":  "OpenAPI 访问未授权或 Token 错误",
 		})
 		c.Abort()
+	}
+}
+
+// LocalhostOnly 仅允许本地回环地址访问，并进行简单的内部凭证校验
+func LocalhostOnly() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ip := c.ClientIP()
+		if ip != "127.0.0.1" && ip != "::1" {
+			utils.BadRequest(c, "仅允许本地访问")
+			c.Abort()
+			return
+		}
+
+		// 简单的内部通信认证
+		token := c.GetHeader("X-Internal-Token")
+		if token == "" || token != constant.Secret {
+			utils.Unauthorized(c, "无效的内部调用凭证")
+			c.Abort()
+			return
+		}
+
+		c.Next()
 	}
 }

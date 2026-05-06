@@ -35,54 +35,74 @@
 
 ---
 
-### 路径二：脚本手动调用 (API)
+### 路径二：脚本手动调用 (内置助手库 - 推荐)
 
-如果您需要在脚本逻辑内部（例如：当抓取到特定数据时）主动触发通知，可以使用此方式。
+白虎面板提供了一套**零配置**的内建助手库（Built-in SDK），支持 Python 和 Node.js。它会自动读取系统注入的环境变量，让您在脚本中只需一行代码即可实现通知投递。
+
+#### 1. 如何获取配置 Key？
+在使用助手库前，请确保您已经在任务设置的“环境变量”或“机密”中配置了以下两个同名 Key：
+- **BHPKG_NOTIFY_TOKEN**：进入「消息推送」->「脚本调用说明」标签，您可以直接复制此处的 Token（如未生成请先点击生成）。
+- **BHPKG_NOTIFY_CHANNEL**：进入「消息推送」->「渠道列表」标签，可以查看每个渠道对应的 **ID**。如果您希望使用默认渠道，也可直接在「脚本调用说明」页面的代码示例中找到默认 ID。
+- **BHPKG_NOTIFY_URL** (可选)：内建通知 API 的地址。默认为 `http://localhost:8052/api/v1/notify/send`。**如果您更改了容器内部的服务监听端口（如通过 `BH_SERVER_PORT`），则需要同步设置此变量为 `http://localhost:{您的端口}/api/v1/notify/send`。**
+
+
+#### 2. 环境初始化
+在开始编写脚本前，您需要在终端执行以下命令，为面板管理的所有语言环境安装 `baihu` 包：
+
+```bash
+baihu builtininstall
+```
+*该操作会将助手库安装到 mise 管理的所有版本中，确保 import 成功。*
+
+#### 2. 代码示例
+
+##### Python (同步调用)
+```python
+import baihu
+
+# 内部自动通过环境变量鉴权，无需填 TOKEN 和 URL
+baihu.notify("任务标题", "通知正文内容")
+```
+
+##### Node.js (异步调用)
+```javascript
+const baihu = require('baihu');
+
+// 极简调用，支持在 CommonJS/ESM 中使用
+baihu.notify("任务标题", "通知正文内容");
+```
+
+---
+
+### 路径三：其他语言/高级调用 (原始 API)
+> [!IMPORTANT]
+> 以下示例中的端口均默认为 `8052`。如果您更改了容器内部的服务端口（通过 `BH_SERVER_PORT` 环境配置），请务必在调用时将 `8052` 替换为您的实际端口。
+
+如果您使用 Shell 或其他尚未提供助手库的语言，可以通过标准 HTTP POST 请求调用。
 
 #### 1. 快速获取代码
-为了极大降低集成门槛，面板内置了代码生成器：
-- 进入 **「消息推送」** -> **「脚本调用」** 标签。
-- 页面会根据您已配置的渠道，自动生成包含 **通知 Token** 和 **渠道 ID** 的完整代码示例。
-- 支持 **Python**、**Node.js** 和 **Shell (Curl)** 格式，直接复制即可使用。
+进入 **「消息推送」** -> **「脚本调用说明」** 标签，页面会根据您的配置自动生成包含 **通知 Token** 和 **默认渠道 ID** 的完整代码。
 
 #### 2. 代码参考示例
-如果您需要手动编写逻辑，请参考以下实现：
 
-##### Python 示例
+##### Shell (Curl)
+> **注意**：如果更改了容器内部的服务端口，请将 `8052` 替换为实际端口，或直接使用环境变量 `BHPKG_NOTIFY_URL`。
+
+```bash
+curl -X POST "http://localhost:8052/api/v1/notify/send" \
+  -H "notify-token: 您的_NOTIFY_TOKEN" \
+  -d '{"channel_id":"渠道ID", "title":"标题", "text":"内容"}'
+```
+
+##### 基础 Python (requests)
 ```python
 import requests
 
 def send_notify(title, content):
     url = "http://localhost:8052/api/v1/notify/send"
     headers = { "notify-token": "您的_NOTIFY_TOKEN" }
-    data = {
-        "channel_id": "您的_渠道_ID",
-        "title": title,
-        "text": content
-    }
+    data = {"channel_id": "您的_渠道_ID", "title": title, "text": content}
     requests.post(url, headers=headers, json=data)
-```
-
-##### Node.js 示例
-```javascript
-const axios = require('axios');
-
-async function sendNotify(title, content) {
-  await axios.post('http://localhost:8052/api/v1/notify/send', {
-    channel_id: '您的_渠道_ID',
-    title: title,
-    text: content
-  }, {
-    headers: { 'notify-token': '您的_NOTIFY_TOKEN' }
-  });
-}
-```
-
-##### Shell 示例
-```bash
-curl -X POST "http://localhost:8052/api/v1/notify/send" \
-  -H "notify-token: 您的_NOTIFY_TOKEN" \
-  -d '{"channel_id":"渠道ID", "title":"标题", "text":"内容"}'
 ```
 
 ---

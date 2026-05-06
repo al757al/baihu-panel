@@ -8,6 +8,7 @@ import (
 	"github.com/engigu/baihu-panel/internal/logger"
 	"github.com/engigu/baihu-panel/internal/models"
 	"github.com/engigu/baihu-panel/internal/systime"
+	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/utils"
 )
 
@@ -88,6 +89,11 @@ func (s *TaskLogService) UpdateTaskDuration(logID string, duration int64) error 
 	return database.DB.Model(&models.TaskLog{}).Where("id = ?", logID).Update("duration", duration).Error
 }
 
+// UpdateLogCommand 更新日志中的命令内容（用于动态生成的命令脱敏）
+func (s *TaskLogService) UpdateLogCommand(logID string, command string) error {
+	return database.DB.Model(&models.TaskLog{}).Where("id = ?", logID).Update("command", models.BigText(command)).Error
+}
+
 // UpdateTaskStats 更新任务统计
 func (s *TaskLogService) UpdateTaskStats(taskID string, status string) {
 	if s.sendStatsService == nil {
@@ -139,7 +145,7 @@ func (s *TaskLogService) CleanTaskLogs(taskID string) {
 	}
 
 	if deleted > 0 {
-		logger.Infof("[TaskLog] 清理任务 #%s 的 %d 条日志", taskID, deleted)
+		logger.Infof("[TaskLog] 清理旧日志: #%s 共 %d 条", taskID, deleted)
 	}
 }
 
@@ -161,8 +167,9 @@ func (s *TaskLogService) ProcessTaskCompletion(taskLog *models.TaskLog) error {
 
 // CreateTaskLogFromAgentResult 从 Agent 结果创建任务日志
 func (s *TaskLogService) CreateTaskLogFromAgentResult(result *models.AgentTaskResult) (*models.TaskLog, error) {
-	// 压缩输出
-	compressed, err := utils.CompressToBase64(result.Output)
+	// 裁剪并压缩输出
+	trimmedOutput := utils.TrimLog(result.Output, constant.MaxLogSize)
+	compressed, err := utils.CompressToBase64(trimmedOutput)
 	if err != nil {
 		logger.Errorf("[TaskLog] 压缩日志失败: %v", err)
 		compressed = ""
@@ -202,8 +209,9 @@ func (s *TaskLogService) CreateTaskLogFromLocalExecution(taskID string, command,
 	if isCompressed {
 		compressed = output
 	} else {
-		// 压缩输出
-		compressed, err = utils.CompressToBase64(output)
+		// 裁剪并压缩输出
+		trimmedOutput := utils.TrimLog(output, constant.MaxLogSize)
+		compressed, err = utils.CompressToBase64(trimmedOutput)
 		if err != nil {
 			logger.Errorf("[TaskLog] 压缩日志失败: %v", err)
 			compressed = ""

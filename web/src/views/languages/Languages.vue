@@ -410,7 +410,7 @@ onMounted(() => {
                             <Globe class="h-12 w-12 mx-auto mb-2 opacity-10" />
                             {{ searchQuery ? '未找到匹配的语言' : '未发现已安装的语言' }}
                         </div>
-                        <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                        <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                             <div v-for="(lang, index) in filteredLanguages" :key="lang.plugin + lang.version"
                                 class="relative group/item flex flex-col p-3.5 sm:p-4 rounded-xl border bg-card/40 hover:bg-accent/40 hover:border-primary/40 transition-all duration-200 shadow-sm">
                                 

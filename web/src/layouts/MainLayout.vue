@@ -106,16 +106,15 @@ onMounted(() => {
 
 <template>
   <!-- Root Container: Handles the background and centering on 2K+ screens -->
-  <div class="h-screen w-full bg-slate-50/50 dark:bg-zinc-950 flex items-center justify-center 2xl:p-8 3xl:p-12 transition-all duration-500 overflow-hidden">
+  <div class="h-screen w-full bg-slate-50/50 dark:bg-zinc-950 flex items-center justify-center 3xl:p-8 transition-all duration-500 overflow-hidden">
     
     <!-- Application Card: The main floating surface -->
     <div
       class="flex h-full w-full bg-background relative transition-all duration-500 overflow-hidden
-             2xl:max-w-[1800px] 2xl:max-h-[92vh] 2xl:rounded-[2.5rem] 
-             2xl:shadow-[0_50px_100px_-20px_rgba(0,0,0,0.25),0_0_0_1px_rgba(255,255,255,0.05)]
-             2xl:ring-1 2xl:ring-slate-900/5 dark:2xl:ring-white/10
-             2xl:border 2xl:border-slate-200/60 dark:2xl:border-white/5
-             3xl:max-w-[2200px] 3xl:max-h-[90vh]">
+             3xl:max-w-[2000px] 3xl:max-h-[92vh] 3xl:rounded-[2.5rem] 
+             3xl:shadow-[0_50px_100px_-20px_rgba(0,0,0,0.25),0_0_0_1px_rgba(255,255,255,0.05)]
+             3xl:ring-1 3xl:ring-slate-900/5 dark:3xl:ring-white/10
+             3xl:border 3xl:border-slate-200/60 dark:3xl:border-white/5">
       
       <!-- Mobile Menu Overlay -->
       <div v-if="mobileMenuOpen" class="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-40 lg:hidden" @click="mobileMenuOpen = false" />
@@ -134,16 +133,21 @@ onMounted(() => {
         <nav class="flex-1 px-3 py-6 space-y-1 flex flex-col items-center overflow-y-auto">
           <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" custom v-slot="{ navigate }">
             <Button variant="ghost"
-              :class="['justify-center gap-3 h-9 px-3 w-full max-w-[140px]', isItemActive(item) && 'bg-zinc-100 dark:bg-accent text-foreground dark:text-accent-foreground font-semibold shadow-sm']"
+              :class="[
+                'justify-center gap-3 h-10 px-3 w-full max-w-[140px] transition-all duration-200',
+                isItemActive(item) 
+                  ? 'bg-secondary text-foreground font-bold' 
+                  : 'text-foreground hover:bg-secondary/50'
+              ]"
               @click="handleNavClick(navigate)">
               <component :is="item.icon" class="h-4 w-4" />
               {{ item.label }}
             </Button>
           </RouterLink>
         </nav>
-        <div class="px-3 py-4 2xl:pb-12 border-t border-slate-200/60 dark:border-white/10 flex justify-center">
+        <div class="px-3 py-4 3xl:pb-12 border-t border-slate-200/60 dark:border-white/10 flex justify-center">
           <Button variant="ghost" 
-            class="justify-start 2xl:justify-center gap-3 h-9 px-3 w-content 2xl:w-full 2xl:max-w-[140px] text-muted-foreground hover:text-foreground transition-all whitespace-nowrap"
+            class="justify-start 3xl:justify-center gap-3 h-9 px-3 w-content 3xl:w-full 3xl:max-w-[140px] text-muted-foreground hover:text-foreground transition-all whitespace-nowrap"
             @click="logout">
             <LogOut class="h-4 w-4 shrink-0" />
             <span class="truncate">退出登录</span>
@@ -160,7 +164,7 @@ onMounted(() => {
               <Menu class="h-5 w-5 text-muted-foreground" />
             </Button>
             <div class="flex flex-col sm:flex-row sm:items-baseline sm:gap-2 truncate">
-              <span class="text-sm text-muted-foreground truncate font-medium poem-sentence" :title="sentence">
+              <span class="text-sm text-muted-foreground truncate font-normal poem-sentence" :title="sentence">
                 <span class="hidden sm:inline">{{ sentence }}</span>
                 <span class="sm:hidden">{{ sentenceContent }}</span>
               </span>
@@ -208,8 +212,7 @@ onMounted(() => {
 
 @media (max-width: 639px) {
   .poem-sentence {
-    font-weight: 400 !important;
-    opacity: 0.7 !important;
+    /* 与卡片标题保持一致，使用标准 font-medium 并取消淡化 */
     letter-spacing: 0.01em;
   }
 }

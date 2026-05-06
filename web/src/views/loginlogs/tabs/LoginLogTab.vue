@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import Pagination from '@/components/Pagination.vue'
-import { RefreshCw, Search, Loader2 } from 'lucide-vue-next'
+import { Loader2 } from 'lucide-vue-next'
 import TextOverflow from '@/components/TextOverflow.vue'
 import { api } from '@/api'
 import { toast } from 'vue-sonner'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 import BaihuDialog from '@/components/ui/BaihuDialog.vue'
+
+const props = defineProps<{
+    username: string
+}>()
 
 const { pageSize } = useSiteSettings()
 
@@ -38,11 +40,9 @@ interface IpGeoInfo {
 }
 
 const logs = ref<LoginLog[]>([])
-const filterUsername = ref('')
 const currentPage = ref(1)
 const total = ref(0)
 const loading = ref(false)
-let searchTimer: ReturnType<typeof setTimeout> | null = null
 
 // IP 地理位置弹窗
 const ipDialogOpen = ref(false)
@@ -73,7 +73,7 @@ async function loadLogs() {
         const res = await api.settings.getLoginLogs({
             page: currentPage.value,
             page_size: pageSize.value,
-            username: filterUsername.value || undefined
+            username: props.username || undefined
         })
         logs.value = res.data
         total.value = res.total
@@ -84,37 +84,20 @@ async function loadLogs() {
     }
 }
 
-function handleSearch() {
-    if (searchTimer) clearTimeout(searchTimer)
-    searchTimer = setTimeout(() => {
-        currentPage.value = 1
-        loadLogs()
-    }, 300)
-}
-
 function handlePageChange(page: number) {
     currentPage.value = page
     loadLogs()
 }
 
 onMounted(loadLogs)
+
+defineExpose({
+    loadLogs
+})
 </script>
 
 <template>
     <div class="space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
-            <div class="flex items-center gap-2 w-full lg:w-auto lg:ml-auto">
-                <div class="relative w-full sm:w-60 group">
-                    <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                    <Input v-model="filterUsername" placeholder="搜索用户名..." class="h-9 pl-9 w-full text-sm bg-muted/20 border-muted-foreground/10 focus:bg-background"
-                        @input="handleSearch" />
-                </div>
-                <Button variant="outline" size="icon" class="h-9 w-9 shrink-0" @click="loadLogs" :disabled="loading"
-                    title="刷新">
-                    <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
-                </Button>
-            </div>
-        </div>
 
         <div class="rounded-lg border bg-card overflow-hidden">
             <!-- ========== 1. 大屏表头 (Large >= 1024px) ========== -->
@@ -212,16 +195,16 @@ onMounted(loadLogs)
         </div>
 
         <!-- IP 地理位置弹窗 -->
-        <BaihuDialog v-model:open="ipDialogOpen" title="IP 详情信息">
+        <BaihuDialog v-model:open="ipDialogOpen" title="IP 详情">
             <template #description>
-                <code class="text-[10px] bg-muted px-2 py-0.5 rounded-md font-mono">{{ selectedIp }}</code>
+                <code class="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded font-mono tracking-wider">{{ selectedIp }}</code>
             </template>
 
             <div v-if="ipGeoLoading" class="flex items-center justify-center py-12">
                 <Loader2 class="h-8 w-8 animate-spin text-primary/40" />
             </div>
             <div v-else-if="ipGeoInfo" class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div class="p-3 rounded-xl bg-muted/20 border border-border/10 space-y-1">
                         <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">国家/地区</p>
                         <p class="text-sm font-medium">{{ ipGeoInfo.country }} ({{ ipGeoInfo.country_code }})</p>
@@ -233,21 +216,24 @@ onMounted(loadLogs)
                 </div>
 
                 <div class="p-4 rounded-xl bg-muted/20 border border-border/10 space-y-3">
-                    <div class="flex justify-between items-center text-sm">
-                        <span class="text-muted-foreground">运营商</span>
-                        <span class="font-medium truncate ml-4">{{ ipGeoInfo.isp || '-' }}</span>
+                    <div class="flex justify-between items-center text-sm gap-2">
+                        <span class="text-muted-foreground shrink-0">运营商</span>
+                        <span class="font-medium truncate text-right">{{ ipGeoInfo.isp || '-' }}</span>
                     </div>
-                    <div class="flex justify-between items-center text-sm">
-                        <span class="text-muted-foreground">组织</span>
-                        <span class="font-medium truncate ml-4">{{ ipGeoInfo.organization || '-' }}</span>
+                    <div class="flex justify-between items-center text-sm gap-2">
+                        <span class="text-muted-foreground shrink-0">组织</span>
+                        <span class="font-medium truncate text-right">{{ ipGeoInfo.organization || '-' }}</span>
                     </div>
-                    <div class="flex justify-between items-center text-sm">
-                        <span class="text-muted-foreground">ASN</span>
-                        <span class="font-medium truncate ml-4">{{ ipGeoInfo.asn }} - {{ ipGeoInfo.asn_organization || '-' }}</span>
+                    <div class="flex justify-between items-start text-sm gap-2">
+                        <span class="text-muted-foreground shrink-0 mt-0.5">ASN</span>
+                        <div class="text-right min-w-0">
+                            <div class="font-medium font-mono text-xs text-primary/80">AS{{ ipGeoInfo.asn }}</div>
+                            <div class="text-xs text-muted-foreground truncate" :title="ipGeoInfo.asn_organization">{{ ipGeoInfo.asn_organization || '-' }}</div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/10 text-xs">
+                <div class="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/10 text-[11px] sm:text-xs">
                     <span class="text-muted-foreground font-medium">地理坐标</span>
                     <span class="font-mono text-primary/70">{{ ipGeoInfo.latitude }}, {{ ipGeoInfo.longitude }}</span>
                 </div>

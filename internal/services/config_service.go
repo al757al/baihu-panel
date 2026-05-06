@@ -6,6 +6,7 @@ import (
 
 	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/logger"
+	"github.com/engigu/baihu-panel/internal/utils"
 
 	"gopkg.in/ini.v1"
 )
@@ -150,11 +151,16 @@ func LoadConfig(path string) (*AppConfig, error) {
 	if Config.Server.URLPrefix != "" {
 		logger.Infof("[Config] URL前缀: %s", Config.Server.URLPrefix)
 	}
+
+	maskedHost := utils.MaskString(Config.Database.Host)
+	maskedDBName := utils.MaskString(Config.Database.DBName)
 	logger.Infof("[Config] 数据库: type=%s, host=%s, port=%d, dbname=%s, dsn=%v",
-		Config.Database.Type, Config.Database.Host, Config.Database.Port, Config.Database.DBName, Config.Database.DSN != "")
+		Config.Database.Type, maskedHost, Config.Database.Port, maskedDBName, Config.Database.DSN != "")
 
 	return Config, nil
 }
+
+
 
 // applyEnvOverrides 从环境变量加载配置
 func applyEnvOverrides() {

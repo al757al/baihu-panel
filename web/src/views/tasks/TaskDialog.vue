@@ -11,6 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import DirTreeSelect from '@/components/DirTreeSelect.vue'
 import { Plus, ChevronDown, X, Search, Check, ChevronsUpDown, AlertCircle, Terminal, Zap, Loader2, Lock, Variable } from 'lucide-vue-next'
 import { Badge } from '@/components/ui/badge'
+import TagInput from '@/components/TagInput.vue'
 import { cn } from '@/lib/utils'
 import { api, type Task, type EnvVar, type Agent, type MiseLanguage } from '@/api'
 import { PATHS, TRIGGER_TYPE } from '@/constants'
@@ -55,6 +56,7 @@ const envSearchQuery = ref('')
 const workDirCache = ref<Record<string, string>>({})
 const concurrency = ref(0)
 const concurrencyEnabled = ref(false)
+const commentToTaskEnabled = ref(false)
 const allEnvsEnabled = ref(false)
 const SCRIPTS_DIR_PLACEHPLDER = '$SCRIPTS_DIR$'
 const scriptsDir = ref<string>(PATHS.SCRIPTS_DIR)
@@ -77,8 +79,8 @@ function onAllEnvsChange(val: boolean) {
   allEnvsEnabled.value = val
 }
 
-function addTag() {
-  const val = tagInput.value.trim()
+function addTag(passedTag?: string) {
+  const val = (passedTag || tagInput.value).trim()
   if (!val) return
   const currentTags = form.value.tags ? form.value.tags.split(',').filter(Boolean) : []
   if (!currentTags.includes(val)) {
@@ -238,6 +240,7 @@ watch(() => props.open, async (val: boolean) => {
       retry_interval: props.task?.retry_interval ?? 0,
       random_range: props.task?.random_range ?? 0,
       timeout: props.task?.timeout ?? 30,
+      pin_type: props.task?.pin_type ?? 'none',
       ...props.task
     }
     // 解析清理配置
@@ -279,10 +282,13 @@ watch(() => props.open, async (val: boolean) => {
 
         // 解析全部环境变量配置
         allEnvsEnabled.value = !!parsed['$task_all_envs']
+        // 解析注释解析配置
+        commentToTaskEnabled.value = !!parsed['$task_comment_to_task']
       } else {
         concurrency.value = 1
         concurrencyEnabled.value = true
         allEnvsEnabled.value = false
+        commentToTaskEnabled.value = false
       }
     } catch {
       concurrency.value = 1
@@ -417,6 +423,8 @@ async function save() {
     config['$task_concurrency'] = concurrencyEnabled.value ? 1 : 0
     // 更新注入全部环境变量字段
     config['$task_all_envs'] = !!allEnvsEnabled.value
+    // 更新注释解析字段
+    config['$task_comment_to_task'] = !!commentToTaskEnabled.value
 
     // 重新序列化配置
     form.value.config = JSON.stringify(config)
@@ -475,42 +483,50 @@ async function save() {
                 <div class="grid grid-cols-1 sm:grid-cols-4 items-start gap-3">
                   <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold pt-2.5">任务标签</Label>
                   <div class="sm:col-span-3 space-y-2">
-                    <div class="flex gap-2">
-                      <div class="relative flex-1">
-                        <Input v-model="tagInput" placeholder="输入标签按回车..." :class="cn('h-9 bg-muted/20 border-muted-foreground/15 transition-all pr-12', tagInput ? 'text-sm font-medium' : 'text-[11px] font-normal')" @keydown.enter.prevent="addTag" />
-                        <Button type="button" variant="ghost" size="sm" class="absolute right-1 top-1 h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary transition-colors" @click.prevent="addTag">添加</Button>
-                      </div>
-                    </div>
-                    <div v-if="form.tags" class="flex flex-wrap gap-1.5 pt-1">
-                      <span v-for="tag in form.tags.split(',').filter(Boolean)" :key="tag" class="flex items-center gap-1.5 bg-primary/5 text-primary px-2.5 py-1 rounded-full text-[11px] font-medium border border-primary/10 group transition-all hover:bg-primary/10">
+                    <div class="flex flex-wrap gap-1.5 p-2 min-h-[42px] bg-muted/20 border border-muted-foreground/15 rounded-md focus-within:border-primary/30 transition-colors">
+                      <span v-for="tag in (form.tags ? form.tags.split(',').filter(Boolean) : [])" :key="tag" 
+                        class="flex items-center gap-1.5 bg-primary/5 text-primary px-2.5 py-1 rounded-full text-[11px] font-medium border border-primary/10 group transition-all hover:bg-primary/10">
                         {{ tag }}
                         <button type="button" class="text-primary/40 hover:text-destructive transition-colors shrink-0" @click.prevent="removeTag(tag)"><X class="h-3 w-3" /></button>
                       </span>
+                      <div class="flex-1 min-w-[100px]">
+                        <TagInput v-model="tagInput" placeholder="输入并回车添加标签..." 
+                          clearOnSelect
+                          class="h-6 border-none bg-transparent shadow-none focus-visible:ring-0 px-0 text-xs"
+                          @enter="addTag" />
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
-                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">执行位置</Label>
-                  <div class="sm:col-span-3">
-                    <Select v-model="selectedAgentId">
-                      <SelectTrigger class="h-9 bg-muted/20 border-muted-foreground/15"><SelectValue placeholder="选择执行节点" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="local" class="flex items-center gap-2"><div class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-blue-500" /><span>本地执行 (Local)</span></div></SelectItem>
-                        <SelectItem v-for="agent in onlineAgents" :key="agent.id" :value="String(agent.id)"><div class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full" :class="agent.status === 'online' ? 'bg-green-500' : 'bg-muted-foreground'" /><span>{{ agent.name }}</span></div></SelectItem>
-                      </SelectContent>
-                    </Select>
+                <!-- 执行位置与触发方式 (大屏保持原样，小屏并排展示优化) -->
+                <div class="grid grid-cols-2 sm:grid-cols-1 gap-2.5 sm:gap-5">
+                  <div class="grid sm:grid-cols-4 items-center gap-1 sm:gap-3 min-w-0">
+                    <Label class="sm:text-right text-[11px] sm:text-xs text-foreground/70 uppercase tracking-wider font-semibold truncate">执行位置</Label>
+                    <div class="sm:col-span-3 min-w-0">
+                      <Select v-model="selectedAgentId">
+                        <SelectTrigger class="h-9 bg-muted/20 border-muted-foreground/15 px-2 sm:px-3 text-[11px] sm:text-sm min-w-0">
+                          <SelectValue placeholder="选择..." class="truncate" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="local" class="text-xs sm:text-sm"><div class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-blue-500" /><span>本地执行</span></div></SelectItem>
+                          <SelectItem v-for="agent in onlineAgents" :key="agent.id" :value="String(agent.id)" class="text-xs sm:text-sm"><div class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full" :class="agent.status === 'online' ? 'bg-green-500' : 'bg-muted-foreground'" /><span>{{ agent.name }}</span></div></SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
-                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">触发方式</Label>
-                  <div class="sm:col-span-3">
-                    <Select v-model="selectedTriggerType">
-                      <SelectTrigger class="h-9 bg-muted/20 border-muted-foreground/15"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem :value="TRIGGER_TYPE.CRON">⏳ 定时周期触发</SelectItem>
-                        <SelectItem :value="TRIGGER_TYPE.BAIHU_STARTUP">🚀 系统启动触发</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div class="grid sm:grid-cols-4 items-center gap-1 sm:gap-3 min-w-0">
+                    <Label class="sm:text-right text-[11px] sm:text-xs text-foreground/70 uppercase tracking-wider font-semibold truncate">触发方式</Label>
+                    <div class="sm:col-span-3 min-w-0">
+                      <Select v-model="selectedTriggerType">
+                        <SelectTrigger class="h-9 bg-muted/20 border-muted-foreground/15 px-2 sm:px-3 text-[11px] sm:text-sm min-w-0">
+                          <SelectValue class="truncate" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem :value="TRIGGER_TYPE.CRON" class="text-xs sm:text-sm">⏳ 定时周期</SelectItem>
+                          <SelectItem :value="TRIGGER_TYPE.BAIHU_STARTUP" class="text-xs sm:text-sm">🚀 系统启动</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -645,35 +661,63 @@ async function save() {
                     </div>
                   </div>
                   <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
-                    <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">随机延迟</Label>
+                    <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-semibold">随机延迟</Label>
                     <div class="sm:col-span-3 flex items-center gap-4">
                       <div class="flex items-center gap-2">
-                        <Input :model-value="form.random_range" @update:model-value="(v: string | number) => form.random_range = Number(v || 0)" type="number" :min="0" class="w-20 h-9 bg-muted/30 text-center font-bold" />
+                        <Input :model-value="form.random_range" @update:model-value="(v: string | number) => form.random_range = Number(v || 0)" type="number" :min="0" class="w-20 h-9 bg-muted/30 text-center font-semibold text-xs" />
                         <span class="text-xs font-semibold text-muted-foreground">秒</span>
                       </div>
                       <div class="flex-1 text-[11px] text-muted-foreground leading-snug p-2 rounded-lg bg-blue-500/5 border border-blue-500/10 italic">
-                        避免高频并发，在基准时间点后延迟 0~{{ form.random_range || 0 }}s
+                        基准时间后随机延迟 0~{{ form.random_range || 0 }}s
                       </div>
                     </div>
                   </div>
                 </template>
                 <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
-                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">失败策略</Label>
+                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-semibold">失败策略</Label>
                   <div class="sm:col-span-3 flex items-center gap-4">
                     <div class="flex items-center gap-2">
                        <span class="text-[11px] text-muted-foreground font-semibold">重试</span>
-                       <Input :model-value="form.retry_count" @update:model-value="(v: string | number) => form.retry_count = Number(v)" type="number" :min="0" class="w-16 h-9 bg-muted/30 text-center font-bold" />
+                       <Input :model-value="form.retry_count" @update:model-value="(v: string | number) => form.retry_count = Number(v)" type="number" :min="0" class="w-16 h-9 bg-muted/30 text-center font-semibold text-xs" />
                        <span class="text-[11px] text-muted-foreground font-semibold">次，间隔</span>
-                       <Input :model-value="form.retry_interval" @update:model-value="(v: string | number) => form.retry_interval = Number(v)" type="number" :min="0" class="w-16 h-9 bg-muted/30 text-center font-bold" />
+                       <Input :model-value="form.retry_interval" @update:model-value="(v: string | number) => form.retry_interval = Number(v)" type="number" :min="0" class="w-16 h-9 bg-muted/30 text-center font-semibold text-xs" />
                        <span class="text-[11px] text-muted-foreground font-semibold">秒</span>
                     </div>
                   </div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
-                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">运行策略</Label>
-                  <div class="sm:col-span-3 flex items-center gap-3">
-                    <Input :model-value="form.timeout" @update:model-value="(v: string | number) => form.timeout = Number(v)" type="number" :min="0" class="w-20 h-9 bg-muted/30 text-center font-bold" />
-                    <span class="text-[11px] font-semibold text-muted-foreground">分钟超时</span>
+                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-semibold">运行策略</Label>
+                  <div class="sm:col-span-3 space-y-4">
+                    <div class="flex items-center gap-3">
+                      <Input :model-value="form.timeout" @update:model-value="(v: string | number) => form.timeout = Number(v)" type="number" :min="0" class="w-20 h-9 bg-muted/30 text-center font-semibold text-xs" />
+                      <span class="text-[11px] font-semibold text-muted-foreground">分钟超时</span>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-muted/20 border border-muted-foreground/10 space-y-2.5">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2 text-xs font-semibold">
+                          <Zap :class="cn('h-3.5 w-3.5', commentToTaskEnabled ? 'text-primary' : 'text-muted-foreground')" /> 
+                          兼容 QL 格式任务脚本注释解析
+                        </div>
+                        <Switch :model-value="commentToTaskEnabled" @update:model-value="v => commentToTaskEnabled = v" />
+                      </div>
+                      <p class="text-[11px] text-muted-foreground leading-relaxed italic">
+                        {{ commentToTaskEnabled ? '尝试从脚本注释中提取任务名称和定时规则。' : '仅使用当前手动配置。' }}
+                      </p>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-muted/20 border border-muted-foreground/10 space-y-2.5">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2 text-xs font-semibold">
+                          <Zap :class="cn('h-3.5 w-3.5', concurrencyEnabled ? 'text-primary' : 'text-muted-foreground')" /> 
+                          并发控制
+                        </div>
+                        <Switch :model-value="concurrencyEnabled" @update:model-value="v => concurrencyEnabled = v" />
+                      </div>
+                      <p class="text-[11px] text-muted-foreground leading-relaxed">
+                        {{ concurrencyEnabled ? '允许同时开启多个副本。' : '当前任务未结束时，新触发将被静默忽略。' }}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -682,7 +726,10 @@ async function save() {
           </div>
         </ScrollArea>
         <div class="flex items-center justify-between px-6 py-4 bg-muted/20 border-t shrink-0 backdrop-blur-sm">
-          <p class="text-[10px] text-muted-foreground/50 italic">最后编辑于: {{ isEdit ? (form.updated_at || '刚才') : '现在' }}</p>
+          <div class="text-[10px] text-muted-foreground/40 italic flex flex-col leading-tight select-none pointer-events-none">
+            <span>最后编辑于:</span>
+            <span>{{ isEdit ? (form.updated_at || '刚才') : '现在' }}</span>
+          </div>
           <div class="flex gap-3">
             <Button variant="ghost" size="sm" class="hover:bg-muted font-medium text-xs px-6" @click="emit('update:open', false)">取消</Button>
             <Button size="sm" class="px-8 font-semibold text-xs shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90" @click="save">确定保存</Button>

@@ -10,14 +10,17 @@ const props = withDefaults(defineProps<{
   title?: string
   loading?: boolean
   variant?: 'full' | 'simple'
+  isStopping?: boolean
   emptyTitle?: string
   emptyDescription?: string
 }>(), {
-  variant: 'simple'
+  variant: 'simple',
+  isStopping: false
 })
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
+  'stop': []
 }>()
 
 const isFullscreen = ref(false)
@@ -69,11 +72,13 @@ onUnmounted(() => {
           :content="content" 
           :title="title"
           :loading="loading"
+          :is-stopping="isStopping"
           :variant="isFullscreen ? 'simple' : variant"
           :empty-title="emptyTitle"
           :empty-description="emptyDescription"
           @close="close"
           @maximize="isFullscreen = !isFullscreen"
+          @stop="$emit('stop')"
         />
       </div>
     </div>

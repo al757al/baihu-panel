@@ -18,11 +18,18 @@ func initPublicAPIRoutes(api *gin.RouterGroup, c *Controllers) {
 	{
 		auth.POST("/login", c.Auth.Login)
 		auth.POST("/logout", c.Auth.Logout)
-		auth.POST("/register", c.Auth.Register)
+		// auth.POST("/register", c.Auth.Register)
 	}
 
 	// 公开的站点设置（无需认证）
 	api.GET("/settings/public", c.Settings.GetPublicSiteSettings)
+
+	// 内部使用的 API（仅限本地调用，无需 Bearer 认证）
+	internalAPI := api.Group("/internal")
+	internalAPI.Use(middleware.LocalhostOnly())
+	{
+		internalAPI.POST("/tasks/sync-repo-status", c.Task.SyncRepoTasks)
+	}
 }
 
 func initAuthorizedAPIRoutes(api *gin.RouterGroup, c *Controllers) {
@@ -76,6 +83,7 @@ func registerTaskRoutes(g *gin.RouterGroup, c *Controllers) {
 		tasks.POST("/batch-delete", c.Task.BatchDeleteTasks)
 		tasks.DELETE("/batch-by-query", c.Task.BatchDeleteByQuery)
 		tasks.POST("/stop/:logID", c.Task.StopTask)
+		tasks.GET("/tags", c.Task.GetTags)
 	}
 
 	execution := g.Group("/execute")

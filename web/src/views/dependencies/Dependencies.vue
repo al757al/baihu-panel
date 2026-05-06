@@ -252,7 +252,7 @@ onMounted(async () => {
         <Package class="h-4 w-4 text-primary/80" />
         <span class="text-sm">正在管理环境: <span class="font-bold font-mono">{{ language }}@{{ langVersion }}</span></span>
       </div>
-      <Badge variant="outline" class="font-mono text-xs border-primary/20 text-primary/80">Scoped Environment</Badge>
+      <Badge variant="outline" class="font-mono text-xs border-primary/20 text-primary/80">隔离环境</Badge>
     </div>
 
     <div class="mt-4">

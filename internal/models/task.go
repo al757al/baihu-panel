@@ -57,6 +57,7 @@ type RepoConfig struct {
 	Dependence     string `json:"dependence"`      // 脚本依赖文件关键词，竖线分割
 	Extensions     string `json:"extensions"`      // 脚本文件后缀关键词，竖线分割
 	AutoAddCron    bool   `json:"auto_add_cron"`   // 自动解析脚本注释添加定时任务
+	CommentToTask  string `json:"commenttotask"`   // 兼容 QL 格式任务脚本注释解析
 	RepoSource     string `json:"repo_source"`     // 仓库来源，如果是选择了这个 ql 导入的仓库，= ql
 }
 
@@ -71,6 +72,7 @@ type Task struct {
 	ID            string              `json:"id" gorm:"primaryKey;size:20"`
 	Name          string              `json:"name" gorm:"size:255;not null"`
 	Remark        string              `json:"remark" gorm:"size:255;default:''"`
+	PinType       string              `json:"pin_type" gorm:"size:20;default:none;index"` // 置顶类型: constant.PinTypeNone, constant.PinTypeTop
 	Command       BigText             `json:"command"`                   // 普通任务的命令
 	Tags          string              `json:"tags" gorm:"size:255;default:''"`            // 标签，逗号分隔
 	Type          string              `json:"type" gorm:"size:20;default:'task'"`         // 任务类型: constant.TaskTypeNormal, constant.TaskTypeRepo
@@ -86,7 +88,7 @@ type Task struct {
 	RetryCount    int                 `json:"retry_count" gorm:"default:0"`               // 失败重试次数
 	RetryInterval int                 `json:"retry_interval" gorm:"default:0"`            // 失败重试间隔(秒)
 	RandomRange   int                 `json:"random_range" gorm:"default:0"`              // 随机延迟范围(秒)
-	Enabled       bool                `json:"enabled" gorm:"default:true"`
+	Enabled       *bool               `json:"enabled" gorm:"default:true"`
 	RunningGo     BigText             `json:"running_go"` // 正在运行的 go routine id 数组 (JSON)
 	RuntimeEnvs   []string            `json:"-" gorm:"-"`                  // 运行时环境变量（非持久化）
 	RuntimeSecrets []string           `json:"-" gorm:"-"`                  // 运行时安全机密（非持久化）
@@ -96,6 +98,13 @@ type Task struct {
 	RepoTaskID    string              `json:"repo_task_id" gorm:"size:20;index"`          // 所属的仓库任务 ID
 	CreatedAt     LocalTime           `json:"created_at"`
 	UpdatedAt     LocalTime           `json:"updated_at"`
+}
+
+func (t *Task) IsRunning() bool {
+	if string(t.RunningGo) == "" || string(t.RunningGo) == "[]" {
+		return false
+	}
+	return true
 }
 
 func (Task) TableName() string {

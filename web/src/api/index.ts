@@ -70,7 +70,12 @@ export const api = {
     },
     create: (data: Partial<Task>) => request<Task>('/tasks', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: Partial<Task>) => request<Task>(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id: string) => request(`/tasks/${id}`, { method: 'DELETE' }),
+    delete: (id: string, params?: { delete_files?: boolean }) => {
+      const query = new URLSearchParams()
+      if (params?.delete_files !== undefined) query.set('delete_files', String(params.delete_files))
+      const queryString = query.toString()
+      return request(`/tasks/${id}${queryString ? '?' + queryString : ''}`, { method: 'DELETE' })
+    },
     batchDelete: (ids: string[]) => request<{ count: number }>('/tasks/batch-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
     batchDeleteByQuery: (params?: { name?: string, agent_id?: string, tags?: string, type?: string }) => {
       const query = new URLSearchParams()
@@ -81,7 +86,8 @@ export const api = {
       return request<{ count: number }>(`/tasks/batch-by-query?${query.toString()}`, { method: 'DELETE' })
     },
     execute: (id: string) => request<ExecutionResult>(`/execute/task/${id}`, { method: 'POST' }),
-    stop: (logID: string) => request(`/tasks/stop/${logID}`, { method: 'POST' })
+    stop: (logID: string) => request(`/tasks/stop/${logID}`, { method: 'POST' }),
+    tags: () => request<string[]>('/tasks/tags')
   },
   scripts: {
     list: () => request<Script[]>('/scripts'),
@@ -355,11 +361,13 @@ export interface Task {
   retry_count: number
   retry_interval: number
   random_range: number
+  pin_type: 'none' | 'top'
   languages: { name: string; version: string }[]
   agent_id: string | null
   enabled: boolean
   last_run: string
   next_run: string
+  running_status?: string
   created_at?: string
   updated_at?: string
 }
@@ -379,17 +387,22 @@ export interface RepoConfig {
   dependence?: string
   extensions?: string
   auto_add_cron?: boolean
+  commenttotask?: string
   concurrency?: number
   repo_source?: string
 }
 
 export interface ExecutionResult {
-  TaskID: string
-  Success: boolean
-  Output: string
-  Error: string
-  Start: string
-  End: string
+  task_id: string
+  log_id?: string
+  success: boolean
+  status?: string
+  output?: string
+  error?: string
+  duration?: number
+  exit_code?: number
+  start_time?: string
+  end_time?: string
 }
 
 export interface TaskListResponse {
@@ -413,6 +426,8 @@ export interface EnvVar {
   type: string
   hidden: boolean
   enabled: boolean
+  created_at?: string
+  updated_at?: string
 }
 
 export interface EnvListResponse {

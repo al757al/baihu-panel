@@ -20,9 +20,7 @@ import (
 )
 
 var agentUpgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
+	CheckOrigin: utils.CheckWSOrigin,
 }
 
 // AgentController Agent 控制器
@@ -72,7 +70,7 @@ func (c *AgentController) Update(ctx *gin.Context) {
 		utils.NotFound(ctx, "Agent 不存在")
 		return
 	}
-	wasEnabled := oldAgent.Enabled
+	wasEnabled := utils.DerefBool(oldAgent.Enabled, true)
 
 	if err := c.agentService.Update(id, req.Name, req.Description, req.Enabled); err != nil {
 		utils.ServerError(ctx, err.Error())
@@ -233,7 +231,7 @@ func (c *AgentController) GetTasks(ctx *gin.Context) {
 		return
 	}
 
-	if !agent.Enabled {
+	if !utils.DerefBool(agent.Enabled, true) {
 		utils.Forbidden(ctx, "Agent 已禁用")
 		return
 	}
@@ -259,7 +257,7 @@ func (c *AgentController) ReportResult(ctx *gin.Context) {
 		return
 	}
 
-	if !agent.Enabled {
+	if !utils.DerefBool(agent.Enabled, true) {
 		utils.Forbidden(ctx, "Agent 已禁用")
 		return
 	}
@@ -393,7 +391,7 @@ func (c *AgentController) WSConnect(ctx *gin.Context) {
 		logger.Infof("[AgentWS] 注册成功: Agent #%s, isNew=%v", agent.ID, isNewAgent)
 	}
 
-	if !agent.Enabled {
+	if !utils.DerefBool(agent.Enabled, true) {
 		c.wsManager.RecordConnectFail(ip)
 		logger.Warnf("[AgentWS] Agent #%s 已禁用, IP=%s", agent.ID, ip)
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "Agent 已禁用"})
@@ -406,6 +404,7 @@ func (c *AgentController) WSConnect(ctx *gin.Context) {
 		logger.Errorf("[AgentWS] 升级连接失败: %v, Agent #%s, IP=%s", err, agent.ID, ip)
 		return
 	}
+	conn.SetReadLimit(constant.MaxMessageSize)
 
 	// 连接成功，重置失败计数
 	c.wsManager.RecordConnectSuccess(ip)
@@ -544,7 +543,7 @@ func (c *AgentController) handleWSMessage(ac *services.AgentConnection, agent *m
 }
 
 // handleTaskHeartbeat 处理任务心跳
-func (c *AgentController) handleTaskHeartbeat(agent *models.Agent, data json.RawMessage) {
+func (c *AgentController) handleTaskHeartbeat(_ *models.Agent, data json.RawMessage) {
 	var req struct {
 		LogID    string `json:"log_id"`
 		Duration int64  `json:"duration"`
@@ -617,7 +616,7 @@ func (c *AgentController) handleTaskResult(agent *models.Agent, data json.RawMes
 }
 
 // handleTaskLog 处理 Agent 发送的实时日志
-func (c *AgentController) handleTaskLog(agent *models.Agent, data json.RawMessage) {
+func (c *AgentController) handleTaskLog(_ *models.Agent, data json.RawMessage) {
 	var logMsg struct {
 		LogID   string `json:"log_id"`
 		Content string `json:"content"`

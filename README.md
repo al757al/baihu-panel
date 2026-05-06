@@ -1,9 +1,10 @@
 # 白虎面板 
 
 [![Hits](https://hits.sh/github.com/engigu/baihu-panel.svg?view=today-total)](https://hits.sh/github.com/engigu/baihu-panel/)
-![Latest Version](https://ghcr-badge.egpl.dev/engigu/baihu/latest_tag?color=%2344cc11&ignore=latest%2Cmain*&label=docker+version&trim=)
+![Version](https://img.shields.io/github/v/tag/engigu/baihu-panel?color=44cc11&label=docker%20version&sort=semver)
 ![Image Size](https://ghcr-badge.egpl.dev/engigu/baihu/size?color=%2344cc11&tag=latest&label=docker+image&trim=)
 ![Image pulls](https://img.shields.io/badge/dynamic/json?url=https://ghcr-badge.elias.eu.org/api/engigu/baihu-panel/baihu&query=downloadCount&style=flat&label=docker%20pulls&color=44cc11)
+
 
 白虎面板 (Baihu Panel) 是一款极致轻量、高性能的自动化任务调度平台。采用 Go + Vue3 架构，专注于高性能与低系统开销。通过深度集成 Mise 运行时管理，它原生支持 Python、Node.js、Go、Rust、PHP 等所有主流语言环境的动态安装（几乎所有的版本）与统一依赖管理。支持 Docker/Docker-Compose 一键部署，开箱即用，是您理想的轻量化脚本托管与任务调度解决方案。
 
@@ -15,6 +16,7 @@
 
 ### 最近更新
 
+**2026.04.16** - **内建脚本助手库 (Built-in SDK)**：新增 Python 与 Node.js 的轻量化助手库，实现脚本内 “零代码配置” 通知投递；配套新增 `baihu builtininstall` 自动化安装命令。  
 **2026.04.14** - **PWA 与通知渠道增强**：支持 PWA (Progressive Web App) 动态配置，站点标题与图标可由后端实时控制；新增 **VoceChat** 通知渠道支持；增强 **Bark** 推送，支持自建服务器配置。  
 **2026.03.27** - **安全机密管理 (GitHub Secrets 风格)**：新增系统级机密（Secret）管理功能。支持 AES-GCM 工业级加密存储，秘钥内存留存销毁；支持执行日志自动脱敏打码；支持仅在计划任务调度时按需注入，终端与测试运行物理隔离，全面提升敏感配置安全性。  
 **2026.03.19** - **仓库同步增强**：新增对青龙仓库格式指令的深度兼容，支持从远程 Git 仓库自动同步脚本并基于注释解析自动创建面板任务，支持白名单、黑名单、依赖保留等高级筛选特性。  
@@ -56,6 +58,7 @@
 - **移动端：** 适配移动小屏样式
 - **远程执行：** 支持远程agent执行任务，展示执行结果
 - **多语言支持：** 深度集成 Mise，支持几乎所有主流编程语言的动态安装、多版本切换及依赖管理
+- **内建助手库：** **(New)** 为 Python/Node.js 提供零配置助手库，简单 import 即可实现一键推信，无需手动管理 API Token 和 URL
 
 ## 功能特性 
 
@@ -657,7 +660,7 @@ host = localhost
 port = 3306
 user = root
 password = 
-dbname = ql_panel
+dbname = bh_panel
 table_prefix = baihu_
 ```
 
@@ -675,7 +678,7 @@ table_prefix = baihu_
 | `BH_DB_PORT` | database.port | 数据库端口 | 3306 |
 | `BH_DB_USER` | database.user | 数据库用户 | root |
 | `BH_DB_PASSWORD` | database.password | 数据库密码 | - |
-| `BH_DB_NAME` | database.dbname | 数据库名称 | ql_panel |
+| `BH_DB_NAME` | database.dbname | 数据库名称 | bh_panel |
 | `BH_DB_PATH` | database.path | SQLite 文件路径 | ./data/baihu.db |
 | `BH_DB_TABLE_PREFIX` | database.table_prefix | 表前缀 | baihu_ |
 | `BAIHU_SECRET_KEY` | - | 系统加密秘钥，用于机密功能（**注：仅支持环境变量设置，不支持配置文件**） | - |
